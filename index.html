@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>GroupHub Elite — Discover WhatsApp & Telegram Communities</title>
+  <meta name="description" content="Discover and join active WhatsApp groups, Telegram groups and channels across every category, country and language.">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Supabase loaded synchronously so it is guaranteed available before window.load fires -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --wa: #25D366; --wa-deep: #128C7E; --tg: #2AABEE; --tg-deep: #0088cc;
+      --ink: #0a0c15; --ink-soft: #2d3a4e; --muted: #5b6e8c;
+      --line: #e2edf7; --surface: #ffffff; --bg-tint: #faf9ff;
+      --radius-xl: 40px; --radius-lg: 28px; --radius-md: 18px; --radius-sm: 12px;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+    }
+    body {
+      font-family: 'Roboto Slab', serif;
+      background: radial-gradient(circle at 12% 8%, #f0fbf4, transparent 38%),
+                  radial-gradient(circle at 88% 18%, #eef7ff, transparent 42%), var(--bg-tint);
+      background-attachment: fixed;
+      color: var(--ink); line-height: 1.5; scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::-webkit-scrollbar { width: 9px; } ::-webkit-scrollbar-track { background: #e9edf2; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(145deg, var(--wa), var(--tg)); border-radius: 10px; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 28px; }
+    a, button, input, select, textarea { font-family: inherit; }
+
+    /* ---- Header ---- */
+    header {
+      background: rgba(255,255,255,0.88); backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      box-shadow: 0 1px 0 rgba(15,23,42,0.04); border-bottom: 1px solid rgba(37,211,102,0.18);
+      position: sticky; top: 0; z-index: 50; transition: box-shadow 0.3s var(--ease);
+    }
+    header.scrolled { box-shadow: 0 10px 30px -14px rgba(15,23,42,0.18); }
+    .navbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; gap: 18px; }
+    .logo h2 {
+      font-size: 1.85rem; font-weight: 800;
+      background: linear-gradient(125deg, var(--wa) 0%, var(--wa-deep) 40%, var(--tg) 80%, var(--tg-deep) 100%);
+      background-clip: text; -webkit-background-clip: text; color: transparent;
+      letter-spacing: -0.4px; display: inline-flex; align-items: baseline; gap: 6px;
+    }
+    .logo .elite-tag {
+      font-size: 0.95rem; font-weight: 700;
+      background: linear-gradient(135deg, #ffb347, #ff7e05);
+      background-clip: text; -webkit-background-clip: text; color: transparent;
+    }
+    .btn-glow {
+      border: none;
+      background: linear-gradient(105deg, var(--wa) 0%, var(--wa-deep) 50%, var(--tg) 100%);
+      background-size: 180% 180%; background-position: 0% 50%;
+      padding: 12px 28px; border-radius: 60px; font-weight: 700; color: white; cursor: pointer;
+      transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background-position 0.5s var(--ease);
+      display: inline-flex; align-items: center; gap: 9px;
+      box-shadow: 0 6px 16px -4px rgba(37,211,102,0.4); font-size: 0.92rem;
+    }
+    .btn-glow:hover { transform: translateY(-2px); box-shadow: 0 16px 28px -10px rgba(42,171,238,0.45); background-position: 100% 50%; }
+    .btn-glow:active { transform: translateY(0); }
+    :focus-visible { outline: 2px solid var(--wa-deep); outline-offset: 3px; border-radius: 4px; }
+
+    /* ---- Hero ---- */
+    .hero {
+      position: relative; background: linear-gradient(135deg, #fff 0%, #f3fbf6 50%, #eef9ff 100%);
+      border-radius: var(--radius-xl); margin: 36px 0 22px; padding: 56px 32px;
+      text-align: center; border: 1px solid rgba(37,211,102,0.16);
+      box-shadow: 0 20px 50px -30px rgba(15,23,42,0.25); overflow: hidden;
+    }
+    .hero::before, .hero::after {
+      content: ''; position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.35; pointer-events: none;
+    }
+    .hero::before { width: 220px; height: 220px; background: var(--wa); top: -90px; left: -60px; animation: float1 9s ease-in-out infinite; }
+    .hero::after { width: 260px; height: 260px; background: var(--tg); bottom: -110px; right: -70px; animation: float2 11s ease-in-out infinite; }
+    @keyframes float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(20px,25px); } }
+    @keyframes float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-25px,-15px); } }
+    .hero-content { position: relative; z-index: 1; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(37,211,102,0.1); color: var(--wa-deep);
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+      padding: 6px 16px; border-radius: 40px; margin-bottom: 16px; animation: fadeUp 0.6s var(--ease) both;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800;
+      background: linear-gradient(to right, #0f172a, var(--tg), var(--wa));
+      background-clip: text; -webkit-background-clip: text; color: transparent;
+      animation: fadeUp 0.6s 0.08s var(--ease) both;
+    }
+    .hero p { margin-top: 12px; color: var(--muted); font-size: 1.02rem; animation: fadeUp 0.6s 0.16s var(--ease) both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ---- Filters ---- */
+    .filter-panel {
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); border-radius: var(--radius-lg);
+      margin: 0 0 28px; padding: 22px 28px;
+      box-shadow: 0 16px 36px -18px rgba(15,23,42,0.12); border: 1px solid rgba(37,211,102,0.16);
+    }
+    .filter-flex { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+    .filter-item { flex: 1 1 150px; min-width: 130px; }
+    .filter-item label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #1e2f4f; display: block; margin-bottom: 6px; }
+    .filter-item select, .filter-item input {
+      width: 100%; padding: 10px 14px; border-radius: 48px;
+      border: 1.5px solid #e0e8f2; background: white; font-size: 0.85rem;
+      transition: border-color 0.2s, box-shadow 0.2s; font-weight: 500; color: var(--ink);
+    }
+    .filter-item select:focus, .filter-item input:focus { outline: none; border-color: var(--tg); box-shadow: 0 0 0 4px rgba(42,171,238,0.12); }
+    .action-btns { display: flex; gap: 10px; flex-wrap: nowrap; }
+    .btn-primary-solid {
+      background: #0f172a; border: none; padding: 10px 26px; border-radius: 60px;
+      color: white; font-weight: 600; cursor: pointer; transition: transform 0.2s, background 0.2s;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; white-space: nowrap;
+    }
+    .btn-primary-solid:hover { background: #1f2a48; transform: translateY(-1px); }
+    .btn-primary-solid:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn-outline-light {
+      background: transparent; border: 1.5px solid #c8dcf5; padding: 9px 22px;
+      border-radius: 60px; font-weight: 600; cursor: pointer; transition: 0.2s;
+      font-size: 0.85rem; white-space: nowrap; color: var(--ink-soft);
+    }
+    .btn-outline-light:hover { background: #f1f7ff; border-color: var(--tg); }
+
+    /* ---- Grid ---- */
+    .stats-chips { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 26px; flex-wrap: wrap; gap: 12px; }
+    .stats-chips h3 { font-size: 1.15rem; font-weight: 800; }
+    .result-count { background: linear-gradient(145deg,#eef2ff,#fff); padding: 7px 22px; border-radius: 60px; font-weight: 600; font-size: 0.84rem; border: 1px solid #cbe0fe; }
+    .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px,1fr)); gap: 26px; margin: 0 0 60px; }
+    .group-card {
+      background: var(--surface); border-radius: var(--radius-lg); overflow: hidden;
+      box-shadow: 0 10px 26px -16px rgba(15,23,42,0.14); border: 1px solid var(--line);
+      transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
+      opacity: 0; transform: translateY(16px); animation: cardIn 0.5s var(--ease) forwards;
+    }
+    @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
+    .group-card:hover { transform: translateY(-7px); box-shadow: 0 32px 44px -20px rgba(37,211,102,0.22), 0 0 0 1px rgba(42,171,238,0.18); border-color: transparent; }
+    .card-header { padding: 20px 22px 12px; display: flex; gap: 14px; align-items: center; border-bottom: 1px solid #f1f5fb; }
+    .platform-badge { width: 52px; height: 52px; background: linear-gradient(135deg,#f0f9ff,#eef5ea); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; flex-shrink: 0; transition: transform 0.3s var(--ease); }
+    .group-card:hover .platform-badge { transform: scale(1.08) rotate(-4deg); }
+    .group-title h4 { font-size: 1.12rem; font-weight: 800; word-break: break-word; line-height: 1.3; }
+    .group-meta { display: flex; gap: 10px; font-size: 0.7rem; font-weight: 500; color: var(--muted); margin-top: 7px; flex-wrap: wrap; }
+    .badge-category { background: #eef2ff; border-radius: 40px; padding: 3px 12px; font-size: 0.68rem; font-weight: 700; color: #3142a3; }
+    .badge-type { background: #fff4e6; border-radius: 40px; padding: 3px 12px; font-size: 0.68rem; font-weight: 700; color: #92400e; }
+    .tags-container { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0; }
+    .tag-pill { background: linear-gradient(115deg,#f0f4fe,#e9f2fa); color: #1f3a6b; font-size: 0.64rem; font-weight: 700; padding: 4px 12px; border-radius: 50px; display: inline-flex; align-items: center; gap: 5px; }
+    .card-body { padding: 16px 22px 22px; }
+    .description { color: var(--ink-soft); font-size: 0.85rem; margin-bottom: 6px; line-height: 1.5; }
+    .card-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 16px; }
+    .join-link-btn { flex: 1; color: white; text-decoration: none; padding: 11px 0; text-align: center; border-radius: 44px; font-weight: 700; font-size: 0.85rem; transition: transform 0.2s, box-shadow 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .join-link-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -8px rgba(0,0,0,0.3); }
+    .join-link-btn.whatsapp { background: linear-gradient(95deg, var(--wa), var(--wa-deep)); }
+    .join-link-btn.telegram { background: linear-gradient(95deg, var(--tg), var(--tg-deep)); }
+    .copy-icon-btn { background: #f1f5f9; border: none; width: 44px; height: 44px; border-radius: 16px; font-size: 1.05rem; cursor: pointer; transition: 0.2s; color: #1e293b; flex-shrink: 0; }
+    .copy-icon-btn:hover { background: #e0eaff; color: var(--wa-deep); transform: translateY(-2px); }
+    .copy-icon-btn.copied { background: var(--wa); color: white; }
+    .loading-spinner { grid-column: 1/-1; text-align: center; padding: 70px 20px; color: var(--muted); font-size: 1.05rem; }
+    .loading-spinner i { font-size: 1.6rem; margin-bottom: 10px; display: block; color: var(--tg); }
+    .empty-state { grid-column: 1/-1; text-align: center; padding: 70px 20px; color: var(--muted); }
+    .empty-state i { color: #cbd5e1; margin-bottom: 14px; }
+    .empty-state p { margin-bottom: 6px; font-size: 1rem; }
+
+    /* ---- Modal ----
+       FIX: visibility + opacity + pointer-events toggling via .open class.
+       The old pattern (display:none ↔ display:flex) left the fixed overlay
+       "invisible but present" when hidden — its pointer-events still consumed
+       clicks on the Apply / Reset buttons and the Submit Group button behind it.
+       Now the overlay starts with pointer-events:none so clicks always pass
+       through to the page, and only turns interactive when .open is added. */
+    .modal {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      position: fixed; inset: 0;
+      background: rgba(10,14,26,0.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 16px;
+      transition: opacity 0.25s var(--ease), visibility 0.25s var(--ease);
+    }
+    .modal.open {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-card {
+      background: white; max-width: 660px; width: 100%; border-radius: var(--radius-xl);
+      padding: 32px 34px; position: relative; max-height: 90vh; overflow-y: auto;
+      transform: scale(0.94) translateY(8px);
+      transition: transform 0.3s var(--ease);
+    }
+    .modal.open .modal-card { transform: scale(1) translateY(0); }
+    .modal-card h3 {
+      font-size: 1.55rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--wa-deep), var(--tg));
+      background-clip: text; -webkit-background-clip: text; color: transparent;
+      margin-bottom: 4px; display: flex; align-items: center; gap: 10px;
+    }
+    .modal-subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; }
+    .modal-card label { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #1e2f4f; display: block; margin: 16px 0 6px; }
+    .modal-card input, .modal-card select, .modal-card textarea {
+      width: 100%; padding: 12px 16px; border-radius: var(--radius-sm); border: 1.5px solid #e0e8f2;
+      font-size: 0.9rem; background: #fbfcfe; transition: border-color 0.2s, box-shadow 0.2s; color: var(--ink);
+    }
+    .modal-card input:focus, .modal-card select:focus, .modal-card textarea:focus { outline: none; border-color: var(--tg); box-shadow: 0 0 0 4px rgba(42,171,238,0.1); }
+    .close-modal-icon { position: absolute; top: 22px; right: 24px; font-size: 1.3rem; cursor: pointer; color: #94a3b8; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; background: none; border: none; }
+    .close-modal-icon:hover { color: #0f172a; background: #f1f5f9; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+    .tags-input-wrapper { border: 1.5px solid #e0e8f2; border-radius: var(--radius-sm); padding: 10px 14px; background: #fbfcfe; transition: border-color 0.2s; }
+    .tags-input-wrapper:focus-within { border-color: var(--tg); box-shadow: 0 0 0 4px rgba(42,171,238,0.1); }
+    .tags-input { border: none !important; padding: 6px 0 !important; background: transparent !important; box-shadow: none !important; width: 100%; }
+    .form-hint { font-size: 0.75rem; color: #8294ab; margin-top: 5px; }
+    .form-error { font-size: 0.8rem; color: #b91c1c; margin-top: 10px; display: none; background: #fef2f2; padding: 10px 14px; border-radius: 12px; border: 1px solid #fecaca; }
+    .submit-success { text-align: center; padding: 30px 10px 10px; display: none; }
+    .submit-success.show { display: block; animation: fadeUp 0.4s var(--ease); }
+    .submit-success .check-circle { width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 18px; background: linear-gradient(135deg, var(--wa), var(--tg)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.9rem; animation: popIn 0.45s var(--ease); }
+    @keyframes popIn { 0% { transform: scale(0); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+    .submit-success h4 { font-size: 1.25rem; font-weight: 800; margin-bottom: 8px; }
+    .submit-success p { color: var(--muted); font-size: 0.9rem; max-width: 380px; margin: 0 auto; }
+
+    /* ---- Toast ---- */
+    .toast-notify {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #0f172ae6; color: white; padding: 13px 28px; border-radius: 60px;
+      font-size: 0.88rem; opacity: 0; pointer-events: none; max-width: 90vw; text-align: center;
+      z-index: 2000; box-shadow: 0 16px 40px -12px rgba(0,0,0,0.4);
+      transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+    }
+    .toast-notify.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    footer { padding: 40px 0 56px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+    footer p:first-child { font-weight: 600; color: var(--ink-soft); }
+    @media (max-width: 640px) {
+      .hero { padding: 40px 22px; border-radius: 28px; }
+      .navbar { padding: 12px 0; }
+      .modal-card { padding: 24px 20px; border-radius: 28px; }
+      .groups-grid { grid-template-columns: 1fr; }
+      .filter-flex { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<header id="siteHeader">
+  <div class="container navbar">
+    <div class="logo"><h2>GroupHub <span class="elite-tag">Elite</span></h2></div>
+    <button id="openModalMainBtn" class="btn-glow"><i class="fas fa-plus"></i> Submit Group</button>
+  </div>
+</header>
+
+<main class="container">
+  <div class="hero">
+    <div class="hero-content">
+      <span class="hero-eyebrow"><i class="fas fa-sparkles"></i> Updated daily by the community</span>
+      <h1><i class="fab fa-whatsapp"></i> + <i class="fab fa-telegram"></i> Where communities thrive</h1>
+      <p>Discover and join active WhatsApp &amp; Telegram groups and channels.</p>
+    </div>
+  </div>
+
+  <div class="filter-panel">
+    <div class="filter-flex">
+      <div class="filter-item"><label>Type</label>
+        <select id="filterType">
+          <option value="all">📌 All formats</option>
+          <option value="whatsapp_group">💬 WhatsApp Group</option>
+          <option value="whatsapp_channel">📢 WhatsApp Channel</option>
+          <option value="telegram_group">✈️ Telegram Group</option>
+          <option value="telegram_channel">📡 Telegram Channel</option>
+        </select>
+      </div>
+      <div class="filter-item"><label>Category</label>
+        <select id="filterCategory">
+          <option value="all">✨ All categories</option>
+          <option>Technology &amp; AI</option><option>Cryptocurrency</option><option>Business &amp; Startups</option>
+          <option>Education &amp; Learning</option><option>Social &amp; Friendship</option><option>Entertainment &amp; Memes</option>
+          <option>Gaming &amp; Esports</option><option>Health &amp; Wellness</option><option>Jobs &amp; Freelance</option>
+          <option>News &amp; Politics</option><option>Sports</option><option>Life Hacks</option>
+          <option>Art / Design / Photography</option><option>Music &amp; Audio</option>
+          <option>Film &amp; Animation</option><option>Shopping</option><option>Travel</option>
+        </select>
+      </div>
+      <div class="filter-item"><label>Country</label>
+        <select id="filterCountry">
+          <option value="all">🌍 Worldwide</option>
+          <option>India</option><option>USA</option><option>United Kingdom</option><option>Canada</option>
+          <option>Australia</option><option>Germany</option><option>France</option><option>UAE</option><option>Singapore</option>
+        </select>
+      </div>
+      <div class="filter-item"><label>Language</label>
+        <select id="filterLanguage">
+          <option value="all">🌐 Any language</option>
+          <option>English</option><option>Hindi</option><option>Spanish</option><option>Arabic</option>
+          <option>French</option><option>German</option><option>Telugu</option><option>Tamil</option>
+          <option>Kannada</option><option>Malayalam</option><option>Bengali</option>
+        </select>
+      </div>
+      <div class="filter-item"><label>Keyword</label><input type="text" id="filterSearch" placeholder="Name or tag..."></div>
+      <div class="action-btns">
+        <button id="applyFilterBtn" class="btn-primary-solid"><i class="fas fa-sliders-h"></i> Apply</button>
+        <button id="resetFilterBtn" class="btn-outline-light"><i class="fas fa-redo-alt"></i> Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-chips">
+    <div><h3><i class="fab fa-whatsapp" style="color:#25D366"></i> <i class="fab fa-telegram" style="color:#2AABEE"></i> Elite Communities</h3></div>
+    <div class="result-count" id="resultCountDisplay">Loading…</div>
+  </div>
+
+  <div id="groupsGridContainer" class="groups-grid"></div>
+</main>
+
+<footer>
+  <div class="container">
+    <p>🌟 GroupHub Elite</p>
+    <p style="margin-top:8px"><i class="fas fa-shield-heart"></i> Report abuse · © 2026 GroupHub Elite</p>
+  </div>
+</footer>
+
+<!-- Submit Group Modal -->
+<div id="groupModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-card">
+    <button class="close-modal-icon" id="closeModalCross" aria-label="Close"><i class="fas fa-times"></i></button>
+
+    <div id="submitFormView">
+      <h3 id="modalTitle"><i class="fas fa-rocket"></i> Publish your community</h3>
+      <p class="modal-subtitle">Fill in the details and your community goes live on the directory <strong>instantly</strong>.</p>
+
+      <label>Platform type *</label>
+      <select id="modalTypeSelect">
+        <option value="whatsapp_group">WhatsApp Group</option>
+        <option value="whatsapp_channel">WhatsApp Channel</option>
+        <option value="telegram_group">Telegram Group</option>
+        <option value="telegram_channel">Telegram Channel</option>
+      </select>
+
+      <label>Group / Channel name *</label>
+      <input type="text" id="modalName" placeholder="e.g., AI Revolution Hub" maxlength="120">
+
+      <label>Invite link *</label>
+      <input type="url" id="modalLink" placeholder="https://chat.whatsapp.com/... or https://t.me/...">
+
+      <label>Category *</label>
+      <select id="modalCategory">
+        <option>Technology &amp; AI</option><option>Cryptocurrency</option><option>Business &amp; Startups</option>
+        <option>Education &amp; Learning</option><option>Social &amp; Friendship</option><option>Entertainment &amp; Memes</option>
+        <option>Gaming &amp; Esports</option><option>Health &amp; Wellness</option><option>Jobs &amp; Freelance</option>
+        <option>News &amp; Politics</option><option>Sports</option><option>Life Hacks</option>
+        <option>Art / Design / Photography</option><option>Music &amp; Audio</option>
+        <option>Film &amp; Animation</option><option>Shopping</option><option>Travel</option>
+      </select>
+
+      <label>Country *</label>
+      <select id="modalCountrySelect">
+        <option value="Worldwide">Worldwide</option>
+        <option>India</option><option>USA</option><option>United Kingdom</option><option>Canada</option>
+        <option>Australia</option><option>Germany</option><option>France</option><option>UAE</option><option>Singapore</option>
+        <option value="Other">Other</option>
+      </select>
+      <div id="customCountryDiv" style="display:none;margin-top:8px"><input type="text" id="customCountryInput" placeholder="Enter country name" maxlength="60"></div>
+
+      <label>Language *</label>
+      <select id="modalLanguageSelect">
+        <option value="English">English</option><option>Telugu</option><option>Hindi</option><option>Kannada</option>
+        <option>Tamil</option><option>Malayalam</option><option>Urdu</option><option>Marathi</option><option>Bengali</option>
+        <option>Spanish</option><option>Arabic</option><option>French</option><option>German</option>
+        <option value="Other">Other</option>
+      </select>
+      <div id="customLanguageDiv" style="display:none;margin-top:8px"><input type="text" id="customLanguageInput" placeholder="Enter language" maxlength="40"></div>
+
+      <label>Short description</label>
+      <textarea id="modalDesc" rows="2" placeholder="What members will experience..." maxlength="280"></textarea>
+
+      <label><i class="fas fa-tags"></i> Tags</label>
+      <div class="tags-input-wrapper">
+        <div id="tagChipsContainer" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="tagInputField" class="tags-input" placeholder="e.g., coding, web3, jobs" autocomplete="off" maxlength="30">
+          <button type="button" id="addTagBtn" style="background:#eef2ff;border:none;border-radius:30px;padding:7px 16px;cursor:pointer;font-weight:700;font-size:0.8rem;white-space:nowrap;flex-shrink:0"><i class="fas fa-plus"></i> Add</button>
+        </div>
+      </div>
+      <p class="form-hint">Press Enter or tap Add · max 8 tags</p>
+
+      <div id="submitFormError" class="form-error"></div>
+
+      <div class="modal-actions">
+        <button id="submitGroupFinalBtn" class="btn-primary-solid" style="background:linear-gradient(95deg,#25D366,#2AABEE);flex:1;padding:13px 0;font-size:0.9rem;justify-content:center"><i class="fas fa-bolt"></i> Add to directory</button>
+        <button id="cancelModalAction" class="btn-outline-light">Cancel</button>
+      </div>
+    </div>
+
+    <div id="submitSuccessView" class="submit-success">
+      <div class="check-circle"><i class="fas fa-rocket"></i></div>
+      <h4>🎉 You're Live!</h4>
+      <p>Your community has been added to the directory and is visible to everyone right now.</p>
+      <button id="successCloseBtn" class="btn-primary-solid" style="margin-top:22px;background:#0f172a">Done</button>
+    </div>
+  </div>
+</div>
+
+<div id="globalToast" class="toast-notify" role="status" aria-live="polite"></div>
+
+<!-- ============================================================
+  ALL JS INLINED — no external app.js needed.
+
+  ROOT CAUSE of the Netlify failures:
+  1. The external <script src="app.js"> could be moved to <head> by
+     Netlify's asset optimisation (Site Settings → Post Processing).
+     The wireEvents IIFE then ran before any DOM elements existed,
+     every getElementById() returned null, and ALL event listeners
+     were silently dropped — so Submit Group / Apply / Reset did nothing.
+  2. The fixed overlay (.modal with position:fixed inset:0) was using
+     display:none toggling in the old version. When "hidden" via that
+     method some browsers still left the overlay in the hit-test tree,
+     swallowing clicks on buttons behind it. Fixed with visibility +
+     opacity + pointer-events toggling via .open class (see CSS above).
+
+  FIXES APPLIED:
+  • JS merged inline — no separate file, no external script request.
+  • wireEvents wrapped in DOMContentLoaded — guaranteed DOM-ready,
+    immune to any script hoisting or defer/async reordering.
+  • Null guards on every getElementById inside wireEvents — one missing
+    element can no longer crash the entire event-wiring block.
+  • initSupabase kept on window.load — guarantees Supabase CDN has
+    fully executed before we call createClient().
+  • getPlatformMeta logic cleaned up with explicit else-if chain.
+============================================================ -->
+<script>
+// ============================================================
+// CONFIG — replace with your real Supabase project values
+// ============================================================
+var SUPABASE_URL      = "https://imnzgzusnghppgbgfdsh.supabase.co";
+var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltbnpnenVzbmdocHBnYmdmZHNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNTYyNDIsImV4cCI6MjA5NzYzMjI0Mn0.XIMHM7lyUJM-dbmrIIkM7eWIzu7znrKxjHkfU-XhJLk"; // ← replace this
+
+// ---- State ----
+var supabaseClient = null;
+var groupsLibrary  = [];
+var currentTags    = [];
+var toastTimer     = null;
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str).replace(/[&<>"']/g, function(m) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m];
+  });
+}
+function escapeAttr(str) { return escapeHtml(str); }
+
+function showToast(msg, isErr) {
+  var toast = document.getElementById("globalToast");
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.style.background = isErr ? "#b91c1c" : "#0f172ae6";
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { toast.classList.remove("show"); }, 2800);
+}
+
+// ============================================================
+// SUPABASE INIT — called on window.load so CDN script in <head>
+// is guaranteed to have executed before we call createClient().
+// ============================================================
+function initSupabase() {
+  try {
+    if (typeof window.supabase === "undefined" ||
+        typeof window.supabase.createClient !== "function") {
+      // CDN not ready yet — retry in 300 ms (handles slow networks)
+      console.warn("Supabase CDN not ready — retrying in 300ms");
+      setTimeout(initSupabase, 300);
+      return;
+    }
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    loadGroups();
+  } catch (e) {
+    console.error("Supabase init failed:", e);
+    var container = document.getElementById("groupsGridContainer");
+    if (container) {
+      container.innerHTML =
+        '<div class="empty-state">' +
+        '<i class="fas fa-plug fa-2x"></i>' +
+        '<p>Could not connect to the database. Check your Supabase key.</p>' +
+        '</div>';
+    }
+  }
+}
+
+// ============================================================
+// GROUP LISTING
+// ============================================================
+async function loadGroups() {
+  var container = document.getElementById("groupsGridContainer");
+  if (!supabaseClient) return;
+  if (container) {
+    container.innerHTML =
+      '<div class="loading-spinner">' +
+      '<i class="fas fa-spinner fa-pulse"></i>Loading communities…' +
+      '</div>';
+  }
+  try {
+    var result = await supabaseClient
+      .from("groups")
+      .select("*")
+      .eq("is_approved", true)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    if (result.error) throw result.error;
+    groupsLibrary = result.data || [];
+    applyFilters();
+  } catch (e) {
+    console.error("loadGroups:", e);
+    showToast("Error loading groups", true);
+    if (container) {
+      container.innerHTML =
+        '<div class="empty-state">' +
+        '<i class="fas fa-triangle-exclamation fa-2x"></i>' +
+        '<p>Could not load communities. Please refresh.</p>' +
+        '</div>';
+    }
+  }
+}
+
+function getPlatformMeta(pt) {
+  if (pt === "whatsapp_group") {
+    return { icon: '<i class="fab fa-whatsapp fa-2x" style="color:#25D366"></i>', cls: "whatsapp", label: '<i class="fab fa-whatsapp"></i> Join Group',  badge: "💬 Group" };
+  } else if (pt === "whatsapp_channel") {
+    return { icon: '<i class="fab fa-whatsapp fa-2x" style="color:#128C7E"></i>', cls: "whatsapp", label: '<i class="fab fa-whatsapp"></i> Follow',     badge: "📢 Channel" };
+  } else if (pt === "telegram_group") {
+    return { icon: '<i class="fab fa-telegram fa-2x" style="color:#2AABEE"></i>',  cls: "telegram", label: '<i class="fab fa-telegram"></i> Join Group',  badge: "✈️ Group" };
+  } else {
+    // telegram_channel (default)
+    return { icon: '<i class="fab fa-telegram fa-2x" style="color:#0088cc"></i>',  cls: "telegram", label: '<i class="fab fa-telegram"></i> Subscribe',  badge: "📡 Channel" };
+  }
+}
+
+function renderGroups(list) {
+  var container = document.getElementById("groupsGridContainer");
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML =
+      '<div class="empty-state">' +
+      '<i class="fas fa-users-slash fa-3x"></i>' +
+      '<p>No groups match your filters.</p>' +
+      '<button id="emptyAddBtn" class="btn-glow" style="margin-top:15px">' +
+      '<i class="fas fa-plus"></i> Suggest a group</button>' +
+      '</div>';
+    var eb = document.getElementById("emptyAddBtn");
+    if (eb) eb.addEventListener("click", openModal);
+    var cd = document.getElementById("resultCountDisplay");
+    if (cd) cd.innerText = "0 communities";
+    return;
+  }
+
+  container.innerHTML = list.map(function(g, i) {
+    var m = getPlatformMeta(g.platform_type);
+    var tags = (g.tags && g.tags.length)
+      ? '<div class="tags-container">' +
+        g.tags.map(function(t) {
+          return '<span class="tag-pill"><i class="fas fa-hashtag"></i> ' + escapeHtml(t) + '</span>';
+        }).join("") +
+        '</div>'
+      : "";
+    var delay = Math.min(i, 11) * 0.045;
+    return (
+      '<div class="group-card" style="animation-delay:' + delay + 's">' +
+        '<div class="card-header">' +
+          '<div class="platform-badge">' + m.icon + '</div>' +
+          '<div class="group-title">' +
+            '<h4>' + escapeHtml(g.name) + '</h4>' +
+            '<div class="group-meta">' +
+              '<span><i class="fas fa-globe"></i> ' + escapeHtml(g.country || "Worldwide") + '</span>' +
+              '<span><i class="fas fa-language"></i> ' + escapeHtml(g.language || "English") + '</span>' +
+              '<span class="badge-category">' + escapeHtml(g.category || "General") + '</span>' +
+              '<span class="badge-type">' + m.badge + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="card-body">' +
+          '<div class="description">' + escapeHtml((g.description || "Join this community!").substring(0, 140)) + '</div>' +
+          tags +
+          '<div class="card-actions">' +
+            '<a href="' + escapeAttr(g.link) + '" target="_blank" rel="noopener noreferrer" class="join-link-btn ' + m.cls + '">' + m.label + '</a>' +
+            '<button class="copy-icon-btn" data-link="' + escapeAttr(g.link) + '" title="Copy link"><i class="fas fa-copy"></i></button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join("");
+
+  container.querySelectorAll(".copy-icon-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var link = btn.getAttribute("data-link");
+      navigator.clipboard.writeText(link).then(function() {
+        btn.classList.add("copied");
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        showToast("✅ Link copied!");
+        setTimeout(function() {
+          btn.classList.remove("copied");
+          btn.innerHTML = '<i class="fas fa-copy"></i>';
+        }, 1600);
+      }).catch(function() { showToast("❌ Could not copy", true); });
+    });
+  });
+
+  var cd = document.getElementById("resultCountDisplay");
+  if (cd) cd.innerText = list.length + (list.length !== 1 ? " communities" : " community") + " listed";
+}
+
+function applyFilters() {
+  var filtered   = groupsLibrary.slice();
+  var typeEl     = document.getElementById("filterType");
+  var catEl      = document.getElementById("filterCategory");
+  var countryEl  = document.getElementById("filterCountry");
+  var langEl     = document.getElementById("filterLanguage");
+  var searchEl   = document.getElementById("filterSearch");
+
+  var typeVal    = typeEl    ? typeEl.value    : "all";
+  var catVal     = catEl     ? catEl.value     : "all";
+  var countryVal = countryEl ? countryEl.value : "all";
+  var langVal    = langEl    ? langEl.value    : "all";
+  var searchVal  = searchEl  ? searchEl.value.trim().toLowerCase() : "";
+
+  if (typeVal    !== "all") filtered = filtered.filter(function(g){ return g.platform_type === typeVal; });
+  if (catVal     !== "all") filtered = filtered.filter(function(g){ return g.category === catVal; });
+  if (countryVal !== "all") filtered = filtered.filter(function(g){ return g.country === countryVal; });
+  if (langVal    !== "all") filtered = filtered.filter(function(g){ return g.language === langVal; });
+  if (searchVal) {
+    filtered = filtered.filter(function(g) {
+      return (g.name && g.name.toLowerCase().includes(searchVal)) ||
+             (g.tags && g.tags.some(function(t){ return t.toLowerCase().includes(searchVal); }));
+    });
+  }
+  renderGroups(filtered);
+}
+
+function resetFilters() {
+  var fields = {
+    filterType: "all", filterCategory: "all",
+    filterCountry: "all", filterLanguage: "all", filterSearch: ""
+  };
+  Object.keys(fields).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = fields[id];
+  });
+  applyFilters();
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal() {
+  currentTags = [];
+  renderTagChips();
+  var errEl  = document.getElementById("submitFormError");
+  var formV  = document.getElementById("submitFormView");
+  var succV  = document.getElementById("submitSuccessView");
+  var modal  = document.getElementById("groupModal");
+  var nameEl = document.getElementById("modalName");
+  if (errEl)  errEl.style.display = "none";
+  if (formV)  formV.style.display = "block";
+  if (succV)  succV.classList.remove("show");
+  if (modal)  modal.classList.add("open");
+  if (nameEl) setTimeout(function() { nameEl.focus(); }, 50);
+}
+
+function closeModal() {
+  var modal = document.getElementById("groupModal");
+  if (modal) modal.classList.remove("open");
+}
+
+function showSubmitSuccess() {
+  var formV = document.getElementById("submitFormView");
+  var succV = document.getElementById("submitSuccessView");
+  if (formV) formV.style.display = "none";
+  if (succV) succV.classList.add("show");
+}
+
+// ============================================================
+// TAGS
+// ============================================================
+function renderTagChips() {
+  var c = document.getElementById("tagChipsContainer");
+  if (!c) return;
+  c.innerHTML = currentTags.map(function(tag, idx) {
+    return (
+      '<span class="tag-pill">' + escapeHtml(tag) +
+      ' <i class="fas fa-times-circle" data-idx="' + idx + '" style="cursor:pointer"></i>' +
+      '</span>'
+    );
+  }).join("");
+  c.querySelectorAll("i[data-idx]").forEach(function(icon) {
+    icon.addEventListener("click", function() {
+      var idx = parseInt(icon.getAttribute("data-idx"), 10);
+      if (!isNaN(idx)) { currentTags.splice(idx, 1); renderTagChips(); }
+    });
+  });
+}
+
+function addTag() {
+  var field = document.getElementById("tagInputField");
+  if (!field) return;
+  var val = field.value.trim().replace(/^#/, "");
+  if (!val) return;
+  if (currentTags.includes(val))  { showToast("Tag already added", true); return; }
+  if (currentTags.length >= 8)    { showToast("Maximum 8 tags", true); return; }
+  currentTags.push(val);
+  renderTagChips();
+  field.value = "";
+  field.focus();
+}
+
+// ============================================================
+// SUBMIT TO SUPABASE
+// — No approval step: inserts directly into `groups` with
+//   is_approved=true and is_active=true so the card appears
+//   instantly on the site.
+// — Duplicate guard: queries `groups` for the same link first;
+//   shows a friendly error if already present.
+// ============================================================
+async function submitGroup() {
+  var errorEl = document.getElementById("submitFormError");
+  if (errorEl) errorEl.style.display = "none";
+
+  // ---- Collect form values ----
+  var platform_type = (document.getElementById("modalTypeSelect")    || {}).value || "whatsapp_group";
+  var name          = ((document.getElementById("modalName")          || {}).value || "").trim();
+  var link          = ((document.getElementById("modalLink")          || {}).value || "").trim();
+  var category      = (document.getElementById("modalCategory")       || {}).value || "General";
+  var country       = (document.getElementById("modalCountrySelect")  || {}).value || "Worldwide";
+  var language      = (document.getElementById("modalLanguageSelect") || {}).value || "English";
+
+  if (country === "Other") {
+    var cc = (document.getElementById("customCountryInput") || {}).value || "";
+    country = cc.trim() || "Worldwide";
+  }
+  if (language === "Other") {
+    var cl = (document.getElementById("customLanguageInput") || {}).value || "";
+    language = cl.trim() || "English";
+  }
+  var description = ((document.getElementById("modalDesc") || {}).value || "").trim() || "Active and engaging community.";
+
+  // ---- Helper to surface errors in the form ----
+  function showErr(msg) {
+    if (errorEl) { errorEl.textContent = msg; errorEl.style.display = "block"; }
+  }
+
+  // ---- Client-side validation ----
+  if (!name || !link)             { showErr("Name and invite link are required."); return; }
+  if (!/^https:\/\//i.test(link)) { showErr("Invite link must start with https://"); return; }
+  if (!supabaseClient)            { showErr("Not connected to database. Please refresh and try again."); return; }
+
+  // ---- Disable button & show spinner ----
+  var btn = document.getElementById("submitGroupFinalBtn");
+  var originalLabel = btn ? btn.innerHTML : "";
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking…'; }
+
+  try {
+    // ---- STEP 1: Duplicate check — query groups table for existing link ----
+    var dupCheck = await supabaseClient
+      .from("groups")
+      .select("id", { count: "exact", head: true })
+      .eq("link", link);
+
+    if (dupCheck.error) throw dupCheck.error;
+
+    // dupCheck.count > 0 means the link already exists
+    if (dupCheck.count !== null && dupCheck.count > 0) {
+      showErr("⚠️ This group/channel link is already in the directory.");
+      if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
+      return;
+    }
+
+    // ---- STEP 2: Insert directly into groups (live immediately) ----
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding…';
+
+    var result = await supabaseClient.from("groups").insert([{
+      name:          name,
+      link:          link,
+      description:   description,
+      platform:      platform_type.startsWith("whatsapp") ? "whatsapp" : "telegram",
+      platform_type: platform_type,
+      category:      category,
+      country:       country,
+      language:      language,
+      tags:          currentTags.slice(),
+      is_approved:   true,
+      is_active:     true
+    }]);
+
+    if (result.error) throw result.error;
+
+    // ---- STEP 3: Clear form fields ----
+    ["modalName", "modalLink", "modalDesc"].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    currentTags = [];
+    renderTagChips();
+
+    // ---- STEP 4: Show success screen ----
+    showSubmitSuccess();
+
+    // ---- STEP 5: Reload groups in background so new card appears instantly ----
+    loadGroups();
+
+  } catch (e) {
+    console.error("submitGroup:", e);
+    // Catch DB-level unique violation (code 23505) as a friendly message
+    if (e.code === "23505") {
+      showErr("⚠️ This group/channel link is already in the directory.");
+    } else {
+      showErr("Error adding community: " + (e.message || "please try again."));
+    }
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
+}
+
+// ============================================================
+// WIRE EVENTS — inside DOMContentLoaded so it is guaranteed to
+// run AFTER the full DOM is parsed, regardless of whether Netlify
+// asset optimisation moves this script to <head>, adds defer/async,
+// or reorders it in a bundle. This is the primary fix for the
+// "buttons do nothing on Netlify" issue.
+// ============================================================
+document.addEventListener("DOMContentLoaded", function() {
+
+  // Helper: safe getElementById + addEventListener
+  function on(id, event, fn) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener(event, fn);
+  }
+
+  // ---- Filter bar ----
+  on("applyFilterBtn", "click", applyFilters);
+  on("resetFilterBtn", "click", resetFilters);
+  on("filterSearch", "keypress", function(e) { if (e.key === "Enter") applyFilters(); });
+
+  var debounce = null;
+  on("filterSearch", "input", function() {
+    clearTimeout(debounce);
+    debounce = setTimeout(applyFilters, 280);
+  });
+
+  ["filterType","filterCategory","filterCountry","filterLanguage"].forEach(function(id) {
+    on(id, "change", applyFilters);
+  });
+
+  // ---- Modal open / close ----
+  on("openModalMainBtn",   "click", openModal);
+  on("closeModalCross",    "click", closeModal);
+  on("cancelModalAction",  "click", closeModal);
+  on("successCloseBtn",    "click", closeModal);
+
+  // Click on backdrop (outside modal card) closes modal
+  var modalEl = document.getElementById("groupModal");
+  if (modalEl) {
+    modalEl.addEventListener("click", function(e) {
+      if (e.target === modalEl) closeModal();
+    });
+  }
+
+  // Escape key
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") {
+      var m = document.getElementById("groupModal");
+      if (m && m.classList.contains("open")) closeModal();
+    }
+  });
+
+  // ---- Tags ----
+  on("addTagBtn",      "click",   addTag);
+  on("tagInputField",  "keypress", function(e) { if (e.key === "Enter") { e.preventDefault(); addTag(); } });
+
+  // ---- Country / Language "Other" reveal ----
+  on("modalCountrySelect", "change", function() {
+    var div = document.getElementById("customCountryDiv");
+    if (div) div.style.display = this.value === "Other" ? "block" : "none";
+  });
+  on("modalLanguageSelect", "change", function() {
+    var div = document.getElementById("customLanguageDiv");
+    if (div) div.style.display = this.value === "Other" ? "block" : "none";
+  });
+
+  // ---- Submit ----
+  on("submitGroupFinalBtn", "click", submitGroup);
+
+  // ---- Header scroll shadow ----
+  var header = document.getElementById("siteHeader");
+  if (header) {
+    window.addEventListener("scroll", function() {
+      header.classList.toggle("scrolled", window.scrollY > 8);
+    }, { passive: true });
+  }
+
+}); // end DOMContentLoaded
+
+// ============================================================
+// BOOT — initSupabase on window.load guarantees the Supabase
+// CDN <script> in <head> has fully parsed and executed.
+// ============================================================
+window.addEventListener("load", initSupabase);
+</script>
+</body>
+</html>
