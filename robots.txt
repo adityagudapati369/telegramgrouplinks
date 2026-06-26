@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://telegramgrouplinks.vercel.app/sitemap.xml
