@@ -2088,6 +2088,20 @@ async function submitGroup() {
     }
 
     // ---- STEP 2: Insert directly into groups (live immediately) ----
+    // ---- Auto-fetch group/channel DP if user didn't provide one ----
+    if (!logo_url) {
+      try {
+        var iconRes = await fetch("https://imnzgzusnghppgbgfdsh.supabase.co/functions/v1/fetch-group-icon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ link: link })
+        });
+        var iconData = await iconRes.json();
+        if (iconData && iconData.image_url) logo_url = iconData.image_url;
+      } catch (e) {
+        console.warn("Auto-fetch logo failed, falling back to icon:", e);
+      }
+    }
     if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding…';
 
     // SECURITY: is_approved / is_active are intentionally NOT set here.
