@@ -1728,7 +1728,10 @@ async function loadMoreGroups() {
     updateLoadMoreButton();
   }
 }
-
+window.handleLogoErr = function(img) {
+  img.style.display = "none";
+  img.parentElement.innerHTML = img.getAttribute("data-fallback-icon");
+};
 function getPlatformMeta(pt) {
   if (pt === "whatsapp_group") {
     return { icon: '<i class="fab fa-whatsapp fa-2x" style="color:#25D366"></i>', cls: "whatsapp", label: '<i class="fab fa-whatsapp"></i> Join Group',  badge: "💬 Group" };
@@ -1779,7 +1782,7 @@ function renderGroups(list) {
         '<div class="platform-badge" style="padding:0;overflow:hidden;">' +
           '<img src="' + escapeAttr(g.logo_url) + '" alt="' + escapeHtml(g.name) + ' logo" loading="lazy" ' +
                'style="width:100%;height:100%;object-fit:cover;" ' +
-               'onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'' + m.icon.replace(/'/g, "\\'") + '\';" />' +
+               'onerror="window.handleLogoErr(this)" data-fallback-icon="' + escapeAttr(m.icon) + '" />' +
         '</div>';
     } else {
       badgeHtml = '<div class="platform-badge">' + m.icon + '</div>';
