@@ -2062,7 +2062,13 @@ async function submitGroup() {
   if (!/^https:\/\//i.test(link)) { showErr("Invite link must start with https://"); return; }
   if (logo_url && !/^https:\/\//i.test(logo_url)) { showErr("Logo URL must start with https://"); return; }
   if (!supabaseClient)            { showErr("Not connected to database. Please refresh and try again."); return; }
-// ---- Link must match the selected platform type (blocks WA↔TG mixing & group↔channel mixing) ----
+// ---- Reject any link that isn't WhatsApp or Telegram at all, with a friendly message ----
+  var isAnyWhatsappLink = /^https:\/\/(chat\.whatsapp\.com\/|(www\.)?whatsapp\.com\/channel\/)/i.test(link);
+  var isAnyTelegramLink = /^https:\/\/(www\.)?t\.me\//i.test(link);
+  if (!isAnyWhatsappLink && !isAnyTelegramLink) {
+    showErr("⚠️ That doesn't look like a valid WhatsApp or Telegram link. Please paste a real group/channel invite link.");
+    return;
+  }// ---- Link must match the selected platform type (blocks WA↔TG mixing & group↔channel mixing) ----
   var isWhatsappGroupLink   = /^https:\/\/chat\.whatsapp\.com\//i.test(link) && !/\/channel\//i.test(link);
   var isWhatsappChannelLink = /^https:\/\/(www\.)?whatsapp\.com\/channel\//i.test(link);
   var isTelegramLink        = /^https:\/\/(www\.)?t\.me\//i.test(link);
