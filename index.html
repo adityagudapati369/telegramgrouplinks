@@ -2066,7 +2066,7 @@ async function submitGroup() {
   var isAnyWhatsappLink = /^https:\/\/(chat\.whatsapp\.com\/|(www\.)?whatsapp\.com\/channel\/)/i.test(link);
   var isAnyTelegramLink = /^https:\/\/(www\.)?t\.me\//i.test(link);
   if (!isAnyWhatsappLink && !isAnyTelegramLink) {
-    showErr("⚠️ That doesn't look like a valid WhatsApp or Telegram link. Please paste a real group/channel invite link.");
+    showErr("⚠️ Invalid WhatsApp or Telegram link. Enter real group/channel invite link.");
     return;
   }// ---- Link must match the selected platform type (blocks WA↔TG mixing & group↔channel mixing) ----
   var isWhatsappGroupLink   = /^https:\/\/chat\.whatsapp\.com\//i.test(link) && !/\/channel\//i.test(link);
