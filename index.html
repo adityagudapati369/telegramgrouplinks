@@ -1828,7 +1828,7 @@ function renderGroups(list) {
       badgeHtml =
         '<div class="platform-badge" style="padding:0;overflow:hidden;">' +
           '<img src="' + escapeAttr(g.logo_url) + '" alt="' + escapeHtml(g.name) + ' logo" loading="lazy" ' +
-               'style="width:100%;height:100%;object-fit:cover;" ' +
+               'style="width:100%;height:100%;object-fit:contain;background:#fff;" ' +
                'onerror="window.handleLogoErr(this)" data-fallback-icon="' + escapeAttr(m.icon) + '" />' +
         '</div>';
     } else {
