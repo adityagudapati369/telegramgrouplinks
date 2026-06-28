@@ -131,13 +131,13 @@
       {
         "@type": "ListItem",
         "position": 1,
-        "name": "GROUP LINKS premium — Channel 1",
+        "name": "Emergency Tickets PRO",
         "url": "https://whatsapp.com/channel/0029VbCGk1z17EmzNn2xKp0X"
       },
       {
         "@type": "ListItem",
         "position": 2,
-        "name": "GROUP LINKS premium — Channel 2",
+        "name": "Loot Hub PRO",
         "url": "https://whatsapp.com/channel/0029Vb8ay9V5PO0yyyYXhY1F"
       }
     ]
@@ -2062,7 +2062,23 @@ async function submitGroup() {
   if (!/^https:\/\//i.test(link)) { showErr("Invite link must start with https://"); return; }
   if (logo_url && !/^https:\/\//i.test(logo_url)) { showErr("Logo URL must start with https://"); return; }
   if (!supabaseClient)            { showErr("Not connected to database. Please refresh and try again."); return; }
+// ---- Link must match the selected platform type (blocks WA↔TG mixing & group↔channel mixing) ----
+  var isWhatsappGroupLink   = /^https:\/\/chat\.whatsapp\.com\//i.test(link) && !/\/channel\//i.test(link);
+  var isWhatsappChannelLink = /^https:\/\/(www\.)?whatsapp\.com\/channel\//i.test(link);
+  var isTelegramLink        = /^https:\/\/(www\.)?t\.me\//i.test(link);
 
+  if (platform_type === "whatsapp_group" && !isWhatsappGroupLink) {
+    showErr("This doesn't look like a WhatsApp Group invite link. It should look like https://chat.whatsapp.com/XXXXXXXXXXXX");
+    return;
+  }
+  if (platform_type === "whatsapp_channel" && !isWhatsappChannelLink) {
+    showErr("This doesn't look like a WhatsApp Channel link. It should look like https://whatsapp.com/channel/XXXXXXXXXXXX");
+    return;
+  }
+  if ((platform_type === "telegram_group" || platform_type === "telegram_channel") && !isTelegramLink) {
+    showErr("This doesn't look like a Telegram link. It should look like https://t.me/XXXXXXXXXXXX");
+    return;
+  }
   // ---- CAPTCHA gate — math question must be answered correctly ----
   if (!verifyCaptcha()) {
     showErr("⚠️ Please answer the math question correctly before submitting.");
