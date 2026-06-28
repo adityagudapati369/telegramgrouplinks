@@ -2074,15 +2074,15 @@ async function submitGroup() {
   var isTelegramLink        = /^https:\/\/(www\.)?t\.me\//i.test(link);
 
   if (platform_type === "whatsapp_group" && !isWhatsappGroupLink) {
-    showErr("This doesn't look like a WhatsApp Group invite link. It should look like https://chat.whatsapp.com/XXXXXXXXXXXX");
+    showErr("⚠️ Invalid Whatsapp group link");
     return;
   }
   if (platform_type === "whatsapp_channel" && !isWhatsappChannelLink) {
-    showErr("This doesn't look like a WhatsApp Channel link. It should look like https://whatsapp.com/channel/XXXXXXXXXXXX");
+    showErr("⚠️ Invalid Whatsapp channel link");
     return;
   }
   if ((platform_type === "telegram_group" || platform_type === "telegram_channel") && !isTelegramLink) {
-    showErr("This doesn't look like a Telegram link. It should look like https://t.me/XXXXXXXXXXXX");
+    showErr("⚠️ Invalid Telegram group/channel link");
     return;
   }
   // ---- CAPTCHA gate — math question must be answered correctly ----
