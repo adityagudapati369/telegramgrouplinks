@@ -23,6 +23,7 @@
        PRIMARY SEO META TAGS
   ═══════════════════════════════════════════════════════════ -->
   <title>GROUP LINKS premium — Find & Join WhatsApp Groups & Telegram Channels 2026</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='24' cy='32' r='22' fill='%2325D366'/%3E%3Ccircle cx='42' cy='28' r='18' fill='%232AABEE' fill-opacity='0.92'/%3E%3C/svg%3E">
   <meta name="description" content="Discover and join the best WhatsApp groups, Telegram groups and channels in 2026. Browse 1000+ active communities on GROUP LINKS premium — category, country and language filtering, all free, no sign-up required.">
   <meta name="keywords" content="group links premium, whatsapp groups, telegram groups, whatsapp group links, telegram channels, join whatsapp group, telegram group links, whatsapp community, telegram community, find whatsapp groups, active telegram channels, whatsapp groups 2026, telegram groups 2026, group directory, community directory, group links, premium groups">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
@@ -292,7 +293,13 @@
     .stats-chips { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 26px; flex-wrap: wrap; gap: 12px; }
     .stats-chips h3 { font-size: 1.15rem; font-weight: 800; }
     .result-count { background: linear-gradient(145deg,#eef2ff,#fff); padding: 7px 22px; border-radius: 60px; font-weight: 600; font-size: 0.84rem; border: 1px solid #cbe0fe; }
-    .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px,1fr)); gap: 26px; margin: 0 0 60px; }
+    .trust-stats-bar { display:flex; gap:14px; flex-wrap:wrap; margin:0 0 22px; }
+    .trust-stat { flex:1; min-width:140px; background:linear-gradient(145deg,#fff,#f3fbf6); border:1px solid var(--line); border-radius:var(--radius-md); padding:14px 18px; text-align:center; }
+    .trust-stat strong { display:block; font-size:1.4rem; font-weight:800; background:linear-gradient(120deg,var(--wa),var(--tg)); background-clip:text; -webkit-background-clip:text; color:transparent; }
+    .trust-stat span { font-size:0.72rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; }
+    .badge-new { background:#fff3cd; color:#8a6500; font-size:0.65rem; font-weight:800; padding:3px 9px; border-radius:30px; margin-left:6px; }
+    .badge-popular { background:#ffe3e3; color:#c62828; font-size:0.65rem; font-weight:800; padding:3px 9px; border-radius:30px; margin-left:6px; }
+    .join-counter { font-size:0.74rem; color:var(--muted); display:flex; align-items:center; gap:5px; margin:2px 0 6px; }.groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px,1fr)); gap: 26px; margin: 0 0 60px; }
     .group-card {
       background: var(--surface); border-radius: var(--radius-lg); overflow: hidden;
       box-shadow: 0 10px 26px -16px rgba(15,23,42,0.14); border: 1px solid var(--line);
@@ -947,7 +954,11 @@
       <p itemprop="description">Discover and join active WhatsApp &amp; Telegram groups and channels on <strong>GROUP LINKS premium</strong> — free, no sign-up needed. Get sponsored groups with 24/7 support.</p>
     </div>
   </div>
-
+<div class="trust-stats-bar">
+    <div class="trust-stat"><strong id="trustStatTotal">…</strong><span>Live Communities</span></div>
+    <div class="trust-stat"><strong id="trustStatNew">…</strong><span>Added This Week</span></div>
+    <div class="trust-stat"><strong id="trustStatClicks">…</strong><span>Total Joins</span></div>
+  </div>  
   <div class="filter-panel">
     <div class="filter-flex">
       <div class="filter-item"><label>Type</label>
@@ -1627,6 +1638,7 @@ function initSupabase() {
     }
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     loadGroups();
+    loadTrustStats();
   } catch (e) {
     console.error("Supabase init failed:", e);
     var container = document.getElementById("groupsGridContainer");
@@ -1660,7 +1672,25 @@ function updateLoadMoreButton() {
     ? '<i class="fas fa-spinner fa-spin"></i> Loading…'
     : '<i class="fas fa-chevron-down"></i> Load more communities';
 }
+async function loadTrustStats() {
+  if (!supabaseClient) return;
+  try {
+    var totalRes = await supabaseClient.from("groups").select("*", { count: "exact", head: true }).eq("is_approved", true).eq("is_active", true);
+    var weekAgo  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    var newRes   = await supabaseClient.from("groups").select("*", { count: "exact", head: true }).eq("is_approved", true).eq("is_active", true).gte("created_at", weekAgo);
+    var clicksRes = await supabaseClient.from("groups").select("click_count").eq("is_approved", true).eq("is_active", true);
 
+    var totalClicks = 0;
+    if (clicksRes.data) clicksRes.data.forEach(function(row) { totalClicks += (row.click_count || 0); });
+
+    var elTotal = document.getElementById("trustStatTotal");
+    var elNew = document.getElementById("trustStatNew");
+    var elClicks = document.getElementById("trustStatClicks");
+    if (elTotal)  elTotal.textContent  = (totalRes.count || 0) + "+";
+    if (elNew)    elNew.textContent    = "+" + (newRes.count || 0);
+    if (elClicks) elClicks.textContent = totalClicks + "+";
+  } catch (e) { console.warn("loadTrustStats failed:", e); }
+}
 async function loadGroups() {
   var container = document.getElementById("groupsGridContainer");
   if (!supabaseClient) return;
@@ -1787,7 +1817,14 @@ function renderGroups(list) {
     } else {
       badgeHtml = '<div class="platform-badge">' + m.icon + '</div>';
     }
-
+    // ---- New / Popular badges + join counter ----
+    var isNew = g.created_at ? (Date.now() - new Date(g.created_at).getTime()) < (3 * 24 * 60 * 60 * 1000) : false;
+    var clickCount = g.click_count || 0;
+    var isPopular  = clickCount >= 20;
+    var statusBadgeHtml =
+      (isNew     ? '<span class="badge-new">🆕 New</span>' : '') +
+      (isPopular ? '<span class="badge-popular">🔥 Popular</span>' : '');
+    var joinCounterHtml = '<span class="join-counter"><i class="fas fa-users"></i> ' + clickCount + ' joined</span>';
     return (
       '<div class="group-card" style="animation-delay:' + delay + 's">' +
         '<div class="card-header">' +
@@ -1798,15 +1835,16 @@ function renderGroups(list) {
               '<span><i class="fas fa-globe"></i> ' + escapeHtml(g.country || "Worldwide") + '</span>' +
               '<span><i class="fas fa-language"></i> ' + escapeHtml(g.language || "English") + '</span>' +
               '<span class="badge-category">' + escapeHtml(g.category || "General") + '</span>' +
-              '<span class="badge-type">' + m.badge + '</span>' +
+              '<span class="badge-type">' + m.badge + '</span>' + statusBadgeHtml +
             '</div>' +
           '</div>' +
         '</div>' +
         '<div class="card-body">' +
           '<div class="description">' + escapeHtml((g.description || "Join this community!").substring(0, 140)) + '</div>' +
           tags +
+          joinCounterHtml +
           '<div class="card-actions">' +
-            '<a href="' + escapeAttr(g.link) + '" target="_blank" rel="noopener noreferrer" class="join-link-btn ' + m.cls + '">' + m.label + '</a>' +
+            '<a href="' + escapeAttr(g.link) + '" target="_blank" rel="noopener noreferrer" class="join-link-btn ' + m.cls + '" data-id="' + escapeAttr(g.id) + '">' + m.label + '</a>' +
             '<button class="copy-icon-btn" data-link="' + escapeAttr(g.link) + '" title="Copy link"><i class="fas fa-copy"></i></button>' +
           '</div>' +
         '</div>' +
@@ -1828,7 +1866,15 @@ function renderGroups(list) {
       }).catch(function() { showToast("❌ Could not copy", true); });
     });
   });
-
+  container.querySelectorAll(".join-link-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var gid = btn.getAttribute("data-id");
+      if (!gid || !supabaseClient) return;
+      supabaseClient.rpc("increment_click_count", { row_id: gid }).then(function(res) {
+        if (res.error) console.warn("click tracking failed:", res.error);
+      });
+    });
+  });
   var cd = document.getElementById("resultCountDisplay");
   if (cd) cd.innerText = list.length + (list.length !== 1 ? " communities" : " community") + " listed";
 }
