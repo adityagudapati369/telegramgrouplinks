@@ -1567,50 +1567,23 @@ function copyUsdtAddress() {
   }).catch(function() { showToast("❌ Copy failed", true); });
 }
 
-// ---- Math CAPTCHA state ----
-// A pool of arithmetic questions. generateCaptcha() picks one randomly each time.
-var CAPTCHA_POOL = [
-  { q: "2 + 5",  a: 7  },
-  { q: "3 - 2",  a: 1  },
-  { q: "40 - 23", a: 17 },
-  { q: "6 + 4",  a: 10 },
-  { q: "9 - 3",  a: 6  },
-  { q: "5 × 3",  a: 15 },
-  { q: "7 + 8",  a: 15 },
-  { q: "50 - 17", a: 33 },
-  { q: "4 × 4",  a: 16 },
-  { q: "12 + 9", a: 21 },
-  { q: "100 - 64", a: 36 },
-  { q: "3 × 7",  a: 21 },
-  { q: "18 - 5", a: 13 },
-  { q: "25 + 13", a: 38 },
-  { q: "8 × 6",  a: 48 },
-];
-var captchaCurrentAnswer = 0;
+var serverCaptchaToken = null;
 
-function generateCaptcha() {
-  var item = CAPTCHA_POOL[Math.floor(Math.random() * CAPTCHA_POOL.length)];
-  captchaCurrentAnswer = item.a;
+async function generateCaptcha() {
   var qEl = document.getElementById("captchaQuestion");
   var aEl = document.getElementById("captchaAnswer");
   var eEl = document.getElementById("captchaError");
-  if (qEl) qEl.textContent = item.q + " = ?";
   if (aEl) { aEl.value = ""; aEl.classList.remove("error"); }
   if (eEl) eEl.style.display = "none";
-}
-
-function verifyCaptcha() {
-  var aEl = document.getElementById("captchaAnswer");
-  var eEl = document.getElementById("captchaError");
-  var userVal = aEl ? parseInt(aEl.value, 10) : NaN;
-  if (isNaN(userVal) || userVal !== captchaCurrentAnswer) {
-    if (eEl) eEl.style.display = "block";
-    if (aEl) aEl.value = "";
-    generateCaptcha(); // new question after wrong answer
-    return false;
+  if (qEl) qEl.textContent = "Loading…";
+  try {
+    var res = await fetch("https://imnzgzusnghppgbgfdsh.supabase.co/functions/v1/submit-group?action=challenge");
+    var data = await res.json();
+    serverCaptchaToken = data.token;
+    if (qEl) qEl.textContent = data.a + " + " + data.b + " = ?";
+  } catch (e) {
+    if (qEl) qEl.textContent = "Could not load — tap refresh.";
   }
-  if (eEl) eEl.style.display = "none";
-  return true;
 }
 
 // ---- Global state ----
@@ -2148,99 +2121,59 @@ async function submitGroup() {
     showErr("⚠️ Invalid Telegram group/channel link");
     return;
   }
-  // ---- CAPTCHA gate — math question must be answered correctly ----
-  if (!verifyCaptcha()) {
+  var captchaAnswerVal = (document.getElementById("captchaAnswer") || {}).value;
+  if (!serverCaptchaToken || captchaAnswerVal === "" || captchaAnswerVal === undefined) {
     showErr("⚠️ Please answer the math question correctly before submitting.");
     return;
   }
 
-  // ---- Disable button & show spinner ----
   var btn = document.getElementById("submitGroupFinalBtn");
   var originalLabel = btn ? btn.innerHTML : "";
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking…'; }
 
   try {
-    // ---- STEP 1: Duplicate check — query groups table for existing link ----
-    var dupCheck = await supabaseClient
-      .from("groups")
-      .select("id", { count: "exact", head: true })
-      .eq("link", link);
+    if (!logo_url) {
+      try {
+        var iconRes = await fetch("https://imnzgzusnghppgbgfdsh.supabase.co/functions/v1/fetch-group-icon", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ link: link })
+        });
+        var iconData = await iconRes.json();
+        if (iconData && iconData.image_url) logo_url = iconData.image_url;
+      } catch (e) { console.warn("Auto-fetch logo failed, falling back to icon:", e); }
+    }
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding…';
 
-    if (dupCheck.error) throw dupCheck.error;
-
-    // dupCheck.count > 0 means the link already exists
-    if (dupCheck.count !== null && dupCheck.count > 0) {
-      showErr("⚠️ This group/channel link is already in the directory.");
+    var submitRes = await fetch("https://imnzgzusnghppgbgfdsh.supabase.co/functions/v1/submit-group?action=submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: serverCaptchaToken, answer: captchaAnswerVal,
+        group: { name: name, link: link, logo_url: logo_url || null, description: description,
+          platform_type: platform_type, category: category, country: country, language: language,
+          tags: currentTags.slice() }
+      })
+    });
+    var submitData = await submitRes.json();
+    if (!submitRes.ok || submitData.error) {
+      showErr(submitData.error || "Could not submit. Please try again.");
       if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
       return;
     }
 
-    // ---- STEP 2: Insert directly into groups (live immediately) ----
-    // ---- Auto-fetch group/channel DP if user didn't provide one ----
-    if (!logo_url) {
-      try {
-        var iconRes = await fetch("https://imnzgzusnghppgbgfdsh.supabase.co/functions/v1/fetch-group-icon", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ link: link })
-        });
-        var iconData = await iconRes.json();
-        if (iconData && iconData.image_url) logo_url = iconData.image_url;
-      } catch (e) {
-        console.warn("Auto-fetch logo failed, falling back to icon:", e);
-      }
-    }
-    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding…';
-
-    // SECURITY: is_approved / is_active are intentionally NOT set here.
-    // The client must never be trusted to assert its own approval/active
-    // status — those flags should come from the database's own column
-    // defaults (e.g. both defaulting to false until a moderator approves
-    // the listing) or a server-side function/RLS policy, never from a
-    // value the browser sends.
-    var result = await supabaseClient.from("groups").insert([{
-      name:          name,
-      link:          link,
-      logo_url:      logo_url || null,
-      description:   description,
-      platform:      platform_type.startsWith("whatsapp") ? "whatsapp" : "telegram",
-      platform_type: platform_type,
-      category:      category,
-      country:       country,
-      language:      language,
-      tags:          currentTags.slice()
-    }]);
-
-    if (result.error) throw result.error;
-
-    // ---- Record submission time for client-side cooldown ----
     recordSubmitTime();
-
-    // ---- STEP 3: Clear form fields ----
     ["modalName", "modalLink", "modalLogoUrl", "modalDesc"].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.value = "";
     });
     currentTags = [];
     renderTagChips();
-
-    // ---- Reset CAPTCHA so a fresh question is ready next time ----
     generateCaptcha();
-
-    // ---- STEP 4: Show success screen ----
     showSubmitSuccess();
-
-    // ---- STEP 5: Reload groups in background so new card appears instantly ----
     loadGroups();
 
   } catch (e) {
     console.error("submitGroup:", e);
-    // Catch DB-level unique violation (code 23505) as a friendly message
-    if (e.code === "23505") {
-      showErr("⚠️ This group/channel link is already in the directory.");
-    } else {
-      showErr("Error adding community: " + (e.message || "please try again."));
-    }
+    showErr("Error adding community: " + (e.message || "please try again."));
   }
 
   if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
