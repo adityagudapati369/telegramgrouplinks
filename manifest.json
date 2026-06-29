@@ -1,0 +1,49 @@
+{
+  "name": "GroupVerse — WhatsApp & Telegram Group Links",
+  "short_name": "GroupVerse",
+  "description": "Discover and join 1000+ free WhatsApp group links and Telegram group links. Browse by category, country, and language — no sign-up needed.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#faf9ff",
+  "theme_color": "#25D366",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["social", "utilities", "communication"],
+  "keywords": "group links, whatsapp groups, telegram groups, community directory",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "GroupVerse — Group Links Directory Homepage"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse WhatsApp Group Links",
+      "short_name": "WhatsApp Groups",
+      "description": "Find and join WhatsApp group links",
+      "url": "/?type=whatsapp_group",
+      "icons": [{ "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>", "sizes": "any" }]
+    },
+    {
+      "name": "Browse Telegram Group Links",
+      "short_name": "Telegram Groups",
+      "description": "Find and join Telegram group links",
+      "url": "/?type=telegram_group",
+      "icons": [{ "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>", "sizes": "any" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
