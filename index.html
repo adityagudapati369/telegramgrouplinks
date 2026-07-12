@@ -520,6 +520,12 @@
     .trust-stat { flex:1; min-width:140px; background:linear-gradient(145deg,#fff,#f3fbf6); border:1px solid var(--line); border-radius:var(--radius-md); padding:14px 18px; text-align:center; }
     .trust-stat strong { display:block; font-size:1.4rem; font-weight:800; background:linear-gradient(120deg,var(--wa),var(--tg)); background-clip:text; -webkit-background-clip:text; color:transparent; }
     .trust-stat span { font-size:0.72rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; }
+    .cross-promo-banner { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; background:linear-gradient(120deg,#E1306C,#1877F2); border-radius:var(--radius-md); padding:16px 22px; margin:0 0 22px; color:#fff; }
+.cross-promo-banner .cp-text { display:flex; align-items:center; gap:10px; font-weight:700; font-size:0.95rem; }
+.cross-promo-banner .cp-text i { font-size:1.3rem; }
+.cross-promo-banner .cp-btn { background:#fff; color:#E1306C; font-weight:800; font-size:0.82rem; padding:9px 18px; border-radius:30px; text-decoration:none; white-space:nowrap; transition:transform 0.25s var(--ease); }
+.cross-promo-banner .cp-btn:hover { transform:translateY(-2px); }
+@media (max-width:600px){ .cross-promo-banner { padding:14px 16px; } .cross-promo-banner .cp-text { font-size:0.85rem; } }
     .badge-new { background:#fff3cd; color:#8a6500; font-size:0.65rem; font-weight:800; padding:3px 9px; border-radius:30px; margin-left:6px; }
     .badge-popular { background:#ffe3e3; color:#c62828; font-size:0.65rem; font-weight:800; padding:3px 9px; border-radius:30px; margin-left:6px; }
     .join-counter { font-size:0.74rem; color:var(--muted); display:flex; align-items:center; gap:5px; margin:2px 0 6px; }.groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px,1fr)); gap: 26px; margin: 0 0 60px; }
@@ -1205,6 +1211,10 @@
     <div class="trust-stat"><strong id="trustStatNew">…</strong><span>Added This Week</span></div>
     <div class="trust-stat"><strong id="trustStatClicks">…</strong><span>Total Joins</span></div>
   </div>  
+  <div class="cross-promo-banner">
+  <div class="cp-text"><i class="fab fa-instagram"></i> Looking for creators to follow? Check out <strong>Profileverse</strong> — our directory of top Instagram, Facebook, Twitter/X &amp; YouTube profiles.</div>
+  <a href="profileverse.html" class="cp-btn" target="_blank" rel="noopener">Explore Profileverse →</a>
+</div>
   <div class="filter-panel">
     <div class="filter-flex">
       <div class="filter-item"><label>Type</label>
