@@ -2151,7 +2151,7 @@ function renderSponsoredCards() {
             '<a href="' + escapeAttr(g.link) + '" target="_blank" rel="noopener noreferrer" class="join-link-btn whatsapp">' +
               '<i class="fab fa-whatsapp"></i> Follow Channel' +
             '</a>' +
-            '<button class="copy-icon-btn sp-copy-btn" data-link="' + escapeAttr(g.link) + '" title="Copy link">' +
+            '<button class="copy-icon-btn sp-copy-btn" data-link="' + escapeAttr(g.link) + '" title="Copy link" aria-label="Copy link">' +
               '<i class="fas fa-copy"></i>' +
             '</button>' +
           '</div>' +
@@ -2524,7 +2524,7 @@ function renderGroups(list) {
           joinCounterHtml +
           '<div class="card-actions">' +
             '<a href="' + escapeAttr(g.link) + '" target="_blank" rel="noopener noreferrer" class="join-link-btn ' + m.cls + '" data-id="' + escapeAttr(g.id) + '">' + m.label + '</a>' +
-            '<button class="copy-icon-btn" data-link="' + escapeAttr(g.link) + '" title="Copy link"><i class="fas fa-copy"></i></button>' +
+            '<button class="copy-icon-btn" data-link="' + escapeAttr(g.link) + '" title="Copy link" aria-label="Copy link"><i class="fas fa-copy"></i></button>' +
           '</div>' +
         '</div>' +
       '</div>'
