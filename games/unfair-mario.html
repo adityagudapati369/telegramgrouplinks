@@ -44,6 +44,7 @@
       align-items: center;
       margin-top: 16px;
       padding: 0 10px;
+      gap: 10px;
     }
     .tc-group {
       display: flex;
@@ -96,7 +97,8 @@
       <button class="tc-btn" id="tc-right">▶</button>
     </div>
     <div class="tc-group">
-      <button class="tc-btn" id="tc-space">RESTART</button>
+      <button class="tc-btn" id="tc-space">SPACE</button>
+      <button class="tc-btn" id="tc-down">▼</button>
       <button class="tc-btn" id="tc-jump">JUMP</button>
     </div>
   </div>
@@ -149,6 +151,7 @@
     bindHoldButton('tc-left', 'ArrowLeft', 'ArrowLeft', 37);
     bindHoldButton('tc-right', 'ArrowRight', 'ArrowRight', 39);
     bindHoldButton('tc-jump', 'ArrowUp', 'ArrowUp', 38);
+    bindHoldButton('tc-down', 'ArrowDown', 'ArrowDown', 40);
     bindHoldButton('tc-space', 'Space', ' ', 32);
   </script>
 </body>
