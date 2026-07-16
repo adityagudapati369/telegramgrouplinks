@@ -11,12 +11,11 @@
   ═══════════════════════════════════════════════════════════ -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+    script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
     font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
     img-src 'self' data: https:;
-    connect-src 'self' https://imnzgzusnghppgbgfdsh.supabase.co;
-    frame-ancestors 'none';
+    connect-src 'self' https://imnzgzusnghppgbgfdsh.supabase.co https://www.google-analytics.com https://www.googletagmanager.com;
     base-uri 'self';
     form-action 'self';
   ">
@@ -2314,7 +2313,8 @@ function renderSponsoredCards() {
 // ============================================================
 var GAMES = [
   { name: "Unfair Mario", icon: "🍄", url: "games/unfair-mario.html" },
-  { name: "N",            icon: "🥷", url: "games/n.html" }
+  { name: "N",            icon: "🥷", url: "games/n.html" },
+  { name: "Fancy Pants Adventure", icon: "👖", url: "games/fancy-pants-adventure.html" }
   // { name: "Next Game", icon: "🎯", url: "games/next-game.html" },
 ];
 
