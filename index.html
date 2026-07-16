@@ -966,6 +966,85 @@
     .follow-note { font-size: 0.7rem; color: #94a3b8; margin-top: 12px; }
 
     /* ════════════════════════════════════════════════════════
+       GAMES BANNER + GAMES MODAL
+       (Add future games only in the GAMES array in the JS —
+        no HTML/CSS changes needed for new games.)
+    ════════════════════════════════════════════════════════ */
+    .games-promo-banner {
+      display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+      background:linear-gradient(120deg,#ff512f,#dd2476);
+      border-radius:var(--radius-md); padding:16px 22px; margin:0 0 22px; color:#fff;
+      cursor:pointer; border:none; width:100%; text-align:left; font-family:inherit;
+    }
+    .games-promo-banner .gp-text { display:flex; align-items:center; gap:10px; font-weight:700; font-size:0.95rem; }
+    .games-promo-banner .gp-text i { font-size:1.3rem; }
+    .games-promo-banner .gp-btn {
+      background:#fff; color:#dd2476; font-weight:800; font-size:0.82rem; padding:9px 18px;
+      border-radius:30px; white-space:nowrap; transition:transform 0.25s var(--ease);
+    }
+    .games-promo-banner:hover .gp-btn { transform:translateY(-2px); }
+    @media (max-width: 640px) {
+      .games-promo-banner { flex-direction:column; align-items:stretch; text-align:center; padding:16px 18px; gap:12px; }
+      .games-promo-banner .gp-text { font-size:0.85rem; text-align:left; }
+      .games-promo-banner .gp-btn { align-self:center; width:100%; text-align:center; }
+    }
+
+    .games-modal {
+      visibility: hidden; opacity: 0; pointer-events: none;
+      position: fixed; inset: 0;
+      background: rgba(10,14,26,0.72);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1200; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      padding: 16px;
+      transition: opacity 0.25s var(--ease), visibility 0.25s var(--ease);
+    }
+    .games-modal.open { visibility: visible; opacity: 1; pointer-events: auto; }
+    .games-card {
+      background: white; max-width: 780px; width: 100%;
+      border-radius: var(--radius-xl); padding: 32px 28px;
+      max-height: 88vh; overflow-y: auto;
+      transform: scale(0.94) translateY(8px);
+      transition: transform 0.3s var(--ease);
+      box-shadow: 0 32px 64px -20px rgba(15,23,42,0.35);
+      position: relative;
+    }
+    .games-modal.open .games-card { transform: scale(1) translateY(0); }
+    .close-games { position: absolute; top: 18px; right: 20px; background: none; border: none;
+      font-size: 1.3rem; cursor: pointer; color: #94a3b8; width: 36px; height: 36px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .close-games:hover { color: #0f172a; background: #f1f5f9; }
+    .games-card h3 {
+      font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 6px;
+      background: linear-gradient(135deg,#ff512f,#dd2476);
+      background-clip: text; -webkit-background-clip: text; color: transparent;
+    }
+    .games-subtitle { text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+    .games-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 16px;
+    }
+    .game-tile {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+      text-decoration: none; color: inherit;
+      background: linear-gradient(135deg,#f0f4fe,#e9f2fa);
+      border: 1px solid #e2edf7; border-radius: var(--radius-md);
+      aspect-ratio: 4 / 3; padding: 16px;
+      transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+    }
+    .game-tile:hover { transform: translateY(-4px); box-shadow: 0 16px 28px -10px rgba(221,36,118,0.35); }
+    .game-tile .game-tile-icon { font-size: 2.4rem; line-height: 1; }
+    .game-tile .game-tile-name { font-weight: 800; font-size: 0.95rem; text-align: center; color: #1e2f4f; }
+    .game-tile .game-tile-play {
+      background: linear-gradient(120deg,#ff512f,#dd2476); color: #fff; font-weight: 800;
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 6px 16px; border-radius: 30px;
+    }
+    @media (max-width: 480px) {
+      .games-card { padding: 24px 18px; }
+      .games-grid { grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 12px; }
+      .game-tile .game-tile-icon { font-size: 2rem; }
+    }
+
+    /* ════════════════════════════════════════════════════════
        ADVERTISE / PRICING MODAL
     ════════════════════════════════════════════════════════ */
     .advertise-modal {
@@ -1229,6 +1308,10 @@
   <div class="cp-text"><i class="fab fa-instagram"></i><span>Looking for creators to follow? Check out <strong>Profileverse</strong> — our directory of top Instagram, Facebook, Twitter/X &amp; YouTube profiles.</span></div>
   <a href="https://www.profileverse.online" class="cp-btn" target="_blank" rel="noopener">Explore Profileverse →</a>
 </div>
+<button type="button" class="games-promo-banner" id="openGamesBtn">
+  <div class="gp-text"><i class="fas fa-gamepad"></i><span>Need a quick timepass? <strong>Play free games</strong> right here — no download needed.</span></div>
+  <span class="gp-btn">Play Now →</span>
+</button>
   <div class="filter-panel">
     <div class="filter-flex">
       <div class="filter-item"><label>Type</label>
@@ -1903,6 +1986,21 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════
+     GAMES MODAL
+     Tiles are rendered from the GAMES array in the script below —
+     to add a new game later, just add one entry there. Nothing
+     here needs to change.
+════════════════════════════════════════════════════════ -->
+<div id="gamesModal" class="games-modal" role="dialog" aria-modal="true">
+  <div class="games-card">
+    <button class="close-games" id="closeGamesBtn" aria-label="Close"><i class="fas fa-times"></i></button>
+    <h3>🎮 Free Games</h3>
+    <p class="games-subtitle">Pick a game to play — right in your browser, no installs.</p>
+    <div class="games-grid" id="gamesGrid"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
      ADVERTISE / PRICING MODAL
 ════════════════════════════════════════════════════════ -->
 <div id="advertiseModal" class="advertise-modal" role="dialog" aria-modal="true">
@@ -2206,6 +2304,46 @@ function renderSponsoredCards() {
 // ============================================================
 // ADVERTISE MODAL
 // ============================================================
+// ============================================================
+// GAMES — add new games here only. Each entry needs:
+//   name : display name shown on the tile
+//   icon : any emoji to represent the game
+//   url  : path to the game's page inside /games/
+// The grid below renders automatically from this array, so
+// nothing else needs to change when a new game is added.
+// ============================================================
+var GAMES = [
+  { name: "Unfair Mario", icon: "🍄", url: "games/unfair-mario.html" },
+  { name: "N",            icon: "🥷", url: "games/n.html" }
+  // { name: "Next Game", icon: "🎯", url: "games/next-game.html" },
+];
+
+function renderGamesGrid() {
+  var grid = document.getElementById("gamesGrid");
+  if (!grid || grid.dataset.rendered === "1") return;
+  grid.innerHTML = GAMES.map(function(g) {
+    return (
+      '<a class="game-tile" href="' + g.url + '">' +
+        '<div class="game-tile-icon">' + g.icon + '</div>' +
+        '<div class="game-tile-name">' + g.name + '</div>' +
+        '<span class="game-tile-play">Play Now</span>' +
+      '</a>'
+    );
+  }).join("");
+  grid.dataset.rendered = "1";
+}
+
+function openGamesModal() {
+  renderGamesGrid();
+  var m = document.getElementById("gamesModal");
+  if (m) m.classList.add("open");
+}
+
+function closeGamesModal() {
+  var m = document.getElementById("gamesModal");
+  if (m) m.classList.remove("open");
+}
+
 function openAdvertiseModal() {
   var m = document.getElementById("advertiseModal");
   if (m) m.classList.add("open");
@@ -2996,6 +3134,16 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
+  // ---- Games modal ----
+  on("openGamesBtn",   "click", openGamesModal);
+  on("closeGamesBtn",  "click", closeGamesModal);
+  var gamesModal = document.getElementById("gamesModal");
+  if (gamesModal) {
+    gamesModal.addEventListener("click", function(e) {
+      if (e.target === gamesModal) closeGamesModal();
+    });
+  }
+
   // ---- Advertise modal ----
   on("openAdvertiseBtn",   "click", openAdvertiseModal);
   on("closeAdvertiseBtn",  "click", closeAdvertiseModal);
@@ -3012,9 +3160,11 @@ document.addEventListener("DOMContentLoaded", function() {
       var m  = document.getElementById("groupModal");
       var fg = document.getElementById("followGateModal");
       var ad = document.getElementById("advertiseModal");
+      var gm = document.getElementById("gamesModal");
       if (m  && m.classList.contains("open"))  closeModal();
       if (fg && fg.classList.contains("open")) closeFollowGate();
       if (ad && ad.classList.contains("open")) closeAdvertiseModal();
+      if (gm && gm.classList.contains("open")) closeGamesModal();
     }
   });
 
