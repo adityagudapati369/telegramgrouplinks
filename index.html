@@ -987,7 +987,46 @@
       .games-promo-banner .gp-text { font-size:0.85rem; text-align:left; }
       .games-promo-banner .gp-btn { align-self:center; width:100%; text-align:center; }
     }
-
+/* ════════════════════════════════════════════════════════
+   GAMES DOCK ROW — always-visible mac-dock-style icon row
+════════════════════════════════════════════════════════ */
+.games-dock-wrap {
+  background: #fff; border: 1px solid #e2edf7; border-radius: var(--radius-md);
+  padding: 18px 14px 26px; margin: 0 0 22px;
+}
+.games-dock-title {
+  font-size: 0.8rem; font-weight: 800; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 14px 4px;
+}
+.games-dock-row {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center;
+  gap: 12px; padding-top: 20px;
+}
+.dock-icon {
+  position: relative;
+  width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; text-decoration: none; color: inherit;
+  background: linear-gradient(135deg,#f0f4fe,#e9f2fa);
+  border: 1px solid #e2edf7; border-radius: 14px;
+  transform-origin: bottom center; will-change: transform;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.22,1,0.36,1),
+              box-shadow 0.18s cubic-bezier(0.22,1,0.36,1),
+              margin 0.18s cubic-bezier(0.22,1,0.36,1);
+}
+.dock-icon.dock-active { box-shadow: 0 16px 26px -10px rgba(221,36,118,0.4); }
+.dock-label {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(4px);
+  background: #0f172a; color: #fff; font-size: 0.68rem; font-weight: 700;
+  padding: 4px 10px; border-radius: 8px; white-space: nowrap;
+  opacity: 0; pointer-events: none; margin-bottom: 8px;
+  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.dock-icon.dock-active .dock-label { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (hover: none) and (pointer: coarse) {
+  .dock-icon { transform: none !important; width: 56px; height: 56px; font-size: 1.9rem; }
+  .dock-label { display: none; }
+}
     .games-modal {
       visibility: hidden; opacity: 0; pointer-events: none;
       position: fixed; inset: 0;
@@ -1311,6 +1350,10 @@
   <div class="gp-text"><i class="fas fa-gamepad"></i><span>Need a quick timepass? <strong>Play free games</strong> right here — no download needed.</span></div>
   <span class="gp-btn">Play Now →</span>
 </button>
+  <div class="games-dock-wrap">
+  <div class="games-dock-title">🎮 Quick Play — Click any game to launch</div>
+  <div class="games-dock-row" id="gamesDockRow"></div>
+</div>
   <div class="filter-panel">
     <div class="filter-flex">
       <div class="filter-item"><label>Type</label>
@@ -2365,7 +2408,62 @@ function renderGamesGrid() {
   }).join("");
   grid.dataset.rendered = "1";
 }
+function renderGamesDock() {
+  var row = document.getElementById("gamesDockRow");
+  if (!row || row.dataset.rendered === "1") return;
+  row.innerHTML = GAMES.map(function(g) {
+    return (
+      '<a class="dock-icon" href="' + g.url + '" target="_blank" rel="noopener">' +
+        '<span class="dock-label">' + g.name + '</span>' +
+        g.icon +
+      '</a>'
+    );
+  }).join("");
+  row.dataset.rendered = "1";
+  initDockMagnify(row, ".dock-icon");
+}
 
+function initDockMagnify(container, selector) {
+  var tiles = Array.prototype.slice.call(container.querySelectorAll(selector));
+  var maxScale = 1.9;
+  var falloff = 90;
+  var isCoarsePointer = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  if (isCoarsePointer || !tiles.length) return;
+
+  function applyMagnify(mouseX) {
+    tiles.forEach(function(tile) {
+      var rect = tile.getBoundingClientRect();
+      var tileCenter = rect.left + rect.width / 2;
+      var dist = Math.abs(mouseX - tileCenter);
+      var scale = 1;
+      var marginPx = 0;
+
+      if (dist < falloff) {
+        var t = 1 - dist / falloff;
+        var eased = Math.sin((t * Math.PI) / 2);
+        scale = 1 + (maxScale - 1) * eased;
+        marginPx = (scale - 1) * (rect.width / 2);
+      }
+
+      tile.style.transform = "scale(" + scale.toFixed(3) + ")";
+      tile.style.marginLeft = marginPx.toFixed(1) + "px";
+      tile.style.marginRight = marginPx.toFixed(1) + "px";
+      tile.classList.toggle("dock-active", scale > 1.05);
+    });
+  }
+
+  function resetMagnify() {
+    tiles.forEach(function(tile) {
+      tile.style.transform = "scale(1)";
+      tile.style.marginLeft = "";
+      tile.style.marginRight = "";
+      tile.classList.remove("dock-active");
+    });
+  }
+
+  container.addEventListener("mousemove", function(e) { applyMagnify(e.clientX); });
+  container.addEventListener("mouseleave", resetMagnify);
+}
 function openGamesModal() {
   renderGamesGrid();
   var m = document.getElementById("gamesModal");
@@ -3169,6 +3267,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // ---- Games modal ----
   on("openGamesBtn",   "click", openGamesModal);
+  renderGamesDock();
   on("closeGamesBtn",  "click", closeGamesModal);
   var gamesModal = document.getElementById("gamesModal");
   if (gamesModal) {
