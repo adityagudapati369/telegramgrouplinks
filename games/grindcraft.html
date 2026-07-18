@@ -7,6 +7,14 @@
   <meta name="description" content="Play GrindCraft online free — a classic Flash game, now playable in your browser via Ruffle emulator.">
 
   <!-- Ruffle: makes .swf Flash files playable in modern browsers -->
+  <script>
+    // GrindCraft has a heavy startup script that exceeds Ruffle's default
+    // execution time limit, so we raise it before Ruffle initializes.
+    window.RufflePlayer = window.RufflePlayer || {};
+    window.RufflePlayer.config = {
+      maxExecutionDuration: { secs: 60, nanos: 0 }
+    };
+  </script>
   <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
 
   <style>
