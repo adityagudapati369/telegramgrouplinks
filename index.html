@@ -1019,24 +1019,32 @@
     }
     .games-subtitle { text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
     .games-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 16px;
-    }
-    .game-tile {
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-      text-decoration: none; color: inherit;
-      background: linear-gradient(135deg,#f0f4fe,#e9f2fa);
-      border: 1px solid #e2edf7; border-radius: var(--radius-md);
-      aspect-ratio: 4 / 3; padding: 16px;
-      transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
-    }
-    .game-tile:hover { transform: translateY(-4px); box-shadow: 0 16px 28px -10px rgba(221,36,118,0.35); }
-    .game-tile .game-tile-icon { font-size: 2.4rem; line-height: 1; }
-    .game-tile .game-tile-name { font-weight: 800; font-size: 0.95rem; text-align: center; color: #1e2f4f; }
-    .game-tile .game-tile-play {
-      background: linear-gradient(120deg,#ff512f,#dd2476); color: #fff; font-weight: 800;
-      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;
-      padding: 6px 16px; border-radius: 30px;
-    }
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center;
+  gap: 14px; padding: 30px 10px 10px;
+}
+.game-tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  text-decoration: none; color: inherit;
+  background: linear-gradient(135deg,#f0f4fe,#e9f2fa);
+  border: 1px solid #e2edf7; border-radius: var(--radius-md);
+  width: 150px; aspect-ratio: 4 / 3; padding: 16px;
+  transform-origin: bottom center;
+  will-change: transform;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+              margin 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.game-tile.dock-active { box-shadow: 0 20px 34px -12px rgba(221,36,118,0.4); }
+.game-tile .game-tile-icon { font-size: 2.4rem; line-height: 1; }
+.game-tile .game-tile-name { font-weight: 800; font-size: 0.95rem; text-align: center; color: #1e2f4f; }
+.game-tile .game-tile-play {
+  background: linear-gradient(120deg,#ff512f,#dd2476); color: #fff; font-weight: 800;
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 6px 16px; border-radius: 30px;
+}
+@media (hover: none) and (pointer: coarse) {
+  .game-tile { transform: none !important; }
+}
     @media (max-width: 480px) {
       .games-card { padding: 24px 18px; }
       .games-grid { grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 12px; }
@@ -2364,6 +2372,52 @@ function renderGamesGrid() {
     );
   }).join("");
   grid.dataset.rendered = "1";
+  initDockMagnify(grid);
+}
+
+// macOS Dock-style hover magnification
+function initDockMagnify(grid) {
+  var tiles = Array.prototype.slice.call(grid.querySelectorAll(".game-tile"));
+  var maxScale = 1.35;      // how big the hovered tile gets
+  var falloff = 110;        // px radius of influence around the cursor
+  var isCoarsePointer = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  if (isCoarsePointer || !tiles.length) return;
+
+  function applyMagnify(mouseX) {
+    tiles.forEach(function(tile) {
+      var rect = tile.getBoundingClientRect();
+      var tileCenter = rect.left + rect.width / 2;
+      var dist = Math.abs(mouseX - tileCenter);
+      var scale = 1;
+      var marginPx = 0;
+
+      if (dist < falloff) {
+        var t = 1 - dist / falloff;               // 0..1
+        var eased = Math.sin((t * Math.PI) / 2);   // smooth ease-out curve
+        scale = 1 + (maxScale - 1) * eased;
+        marginPx = (scale - 1) * (rect.width / 2); // extra spacing so tiles don't overlap
+      }
+
+      tile.style.transform = "scale(" + scale.toFixed(3) + ")";
+      tile.style.marginLeft = marginPx.toFixed(1) + "px";
+      tile.style.marginRight = marginPx.toFixed(1) + "px";
+      tile.classList.toggle("dock-active", scale > 1.02);
+    });
+  }
+
+  function resetMagnify() {
+    tiles.forEach(function(tile) {
+      tile.style.transform = "scale(1)";
+      tile.style.marginLeft = "";
+      tile.style.marginRight = "";
+      tile.classList.remove("dock-active");
+    });
+  }
+
+  grid.addEventListener("mousemove", function(e) {
+    applyMagnify(e.clientX);
+  });
+  grid.addEventListener("mouseleave", resetMagnify);
 }
 
 function openGamesModal() {
