@@ -396,6 +396,50 @@
       --radius-xl: 40px; --radius-lg: 28px; --radius-md: 18px; --radius-sm: 12px;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
     }
+    /* ---- Mac-style smooth motion system ---- */
+    :root {
+      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);   /* smooth macOS-like deceleration */
+      --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); /* gentle icon "pop" */
+    }
+
+    /* Give every interactive element the same buttery easing by default */
+    a, button, .btn, .btn-glow, .btn-primary-solid, .btn-outline-light,
+    .group-card, .game-tile, .dock-icon, .platform-badge, .copy-icon-btn,
+    .close-modal-icon, .sponsored-card, .pricing-plan, .cp-btn, .gp-btn,
+    .btn-get-sponsored, .btn-follow-ch, .btn-confirm-follow, .footer-wa-btn,
+    .join-link-btn {
+      transition-timing-function: var(--ease-spring) !important;
+      transition-duration: 0.35s !important;
+      will-change: transform;
+    }
+
+    /* macOS-style press feedback: icons/buttons squash slightly on click */
+    .dock-icon:active, .game-tile:active, .group-card:active,
+    .btn-glow:active, .btn-primary-solid:active, .btn-outline-light:active,
+    .copy-icon-btn:active, .platform-badge:active, .sponsored-card:active,
+    .join-link-btn:active {
+      transform: scale(0.94) !important;
+      transition-duration: 0.12s !important;
+      transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
+    }
+
+    /* App-icon-like pop-in when tiles/cards first appear */
+    @keyframes iconPopIn {
+      0%   { opacity: 0; transform: scale(0.6) translateY(10px); }
+      60%  { opacity: 1; transform: scale(1.05) translateY(-2px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .game-tile, .dock-icon {
+      animation: iconPopIn 0.45s var(--ease-bounce) backwards;
+    }
+    .game-tile:nth-child(1),  .dock-icon:nth-child(1)  { animation-delay: 0.02s; }
+    .game-tile:nth-child(2),  .dock-icon:nth-child(2)  { animation-delay: 0.05s; }
+    .game-tile:nth-child(3),  .dock-icon:nth-child(3)  { animation-delay: 0.08s; }
+    .game-tile:nth-child(4),  .dock-icon:nth-child(4)  { animation-delay: 0.11s; }
+    .game-tile:nth-child(5),  .dock-icon:nth-child(5)  { animation-delay: 0.14s; }
+    .game-tile:nth-child(6),  .dock-icon:nth-child(6)  { animation-delay: 0.17s; }
+    .game-tile:nth-child(7),  .dock-icon:nth-child(7)  { animation-delay: 0.20s; }
+    .game-tile:nth-child(8),  .dock-icon:nth-child(8)  { animation-delay: 0.23s; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
