@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>My Friend Pedro - Play Online | Groupverse</title>
+  <meta name="description" content="Play My Friend Pedro online free — a classic Flash game, now playable in your browser via Ruffle emulator.">
+
+  <!-- Ruffle: makes .swf Flash files playable in modern browsers -->
+  <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: sans-serif;
+      color: #fff;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    h1 { margin: 20px 0 10px; }
+    #game-container {
+      width: 800px;
+      max-width: 95vw;
+      aspect-ratio: 4 / 3;
+      background: #000;
+      border: 2px solid #333;
+      touch-action: none;
+    }
+    ruffle-player {
+      width: 100%;
+      height: 100%;
+    }
+
+    #touch-controls {
+      display: none;
+      width: 800px;
+      max-width: 95vw;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      padding: 0 10px;
+      gap: 10px;
+    }
+    .tc-group { display: flex; gap: 10px; }
+    .tc-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #2a2a2a;
+      border: 2px solid #555;
+      color: #fff;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+    .tc-btn:active { background: #ff512f; border-color: #ff512f; }
+    .tc-action { width: 74px; height: 74px; font-size: 13px; font-weight: bold; }
+    @media (hover: none) and (pointer: coarse) { #touch-controls { display: flex; } }
+  </style>
+</head>
+<body>
+  <h1>My Friend Pedro</h1>
+  <div id="game-container">
+    <embed src="my-friend-pedro.swf" width="100%" height="100%">
+  </div>
+
+  <div id="touch-controls">
+    <div class="tc-group">
+      <button class="tc-btn" id="tc-left">◀</button>
+      <button class="tc-btn" id="tc-right">▶</button>
+    </div>
+    <div class="tc-group">
+      <button class="tc-btn" id="tc-jump">▲</button>
+      <button class="tc-btn tc-action" id="tc-dive">DIVE</button>
+    </div>
+  </div>
+
+  <p style="max-width:600px;text-align:center;color:#aaa;font-size:14px;margin-top:14px;">
+    This game runs via the Ruffle Flash emulator since Adobe Flash Player was discontinued in 2020.
+    On mobile, use the arrows to move/jump and DIVE to dodge-roll, and tap-and-drag directly on the game screen to aim and shoot.
+  </p>
+
+  <script>
+
+    function fireKey(type, code, key, keyCode) {
+      const target = document.querySelector('ruffle-player') || document;
+      const event = new KeyboardEvent(type, {
+        code: code, key: key, keyCode: keyCode, which: keyCode,
+        bubbles: true, cancelable: true
+      });
+      target.dispatchEvent(event);
+      window.dispatchEvent(event);
+      document.dispatchEvent(event);
+    }
+    function bindHoldButton(id, code, key, keyCode) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      const press = (e) => { e.preventDefault(); fireKey('keydown', code, key, keyCode); };
+      const release = (e) => { e.preventDefault(); fireKey('keyup', code, key, keyCode); };
+      btn.addEventListener('touchstart', press, { passive: false });
+      btn.addEventListener('touchend', release, { passive: false });
+      btn.addEventListener('touchcancel', release, { passive: false });
+      btn.addEventListener('mousedown', press);
+      btn.addEventListener('mouseup', release);
+      btn.addEventListener('mouseleave', release);
+    }
+
+
+    bindHoldButton('tc-left', 'ArrowLeft', 'ArrowLeft', 37);
+    bindHoldButton('tc-right', 'ArrowRight', 'ArrowRight', 39);
+    bindHoldButton('tc-jump', 'ArrowUp', 'ArrowUp', 38);
+    bindHoldButton('tc-dive', 'ShiftLeft', 'Shift', 16);
+
+  </script>
+</body>
+</html>
