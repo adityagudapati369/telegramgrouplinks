@@ -987,6 +987,10 @@
       .games-promo-banner .gp-text { font-size:0.85rem; text-align:left; }
       .games-promo-banner .gp-btn { align-self:center; width:100%; text-align:center; }
     }
+    /* Quick Play dock: desktop only — fully hidden on mobile & tablet */
+@media (max-width: 1024px) {
+  .games-dock-wrap { display: none !important; }
+}
 /* ════════════════════════════════════════════════════════
    GAMES DOCK ROW — always-visible mac-dock-style icon row
 ════════════════════════════════════════════════════════ */
