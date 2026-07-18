@@ -2451,7 +2451,10 @@ function initDockMagnify(container, selector) {
   var isCoarsePointer = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
   if (isCoarsePointer || !tiles.length) return;
 
-  function applyMagnify(mouseX) {
+ function applyMagnify(mouseX) {
+    var closestTile = null;
+    var closestDist = Infinity;
+
     tiles.forEach(function(tile) {
       var rect = tile.getBoundingClientRect();
       var tileCenter = rect.left + rect.width / 2;
@@ -2469,7 +2472,18 @@ function initDockMagnify(container, selector) {
       tile.style.transform = "scale(" + scale.toFixed(3) + ")";
       tile.style.marginLeft = marginPx.toFixed(1) + "px";
       tile.style.marginRight = marginPx.toFixed(1) + "px";
-      tile.classList.toggle("dock-active", scale > 1.05);
+
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestTile = tile;
+      }
+    });
+
+    // Only the single icon nearest the pointer gets the "active" state
+    // (and therefore the name tooltip) — never more than one at a time.
+    tiles.forEach(function(tile) {
+      var isActive = (tile === closestTile) && (closestDist < falloff * 0.6);
+      tile.classList.toggle("dock-active", isActive);
     });
   }
 
