@@ -2600,44 +2600,40 @@ async function attemptAdminLogin() {
   var err = document.getElementById("adminLoginErr");
   var pass = (input && input.value) || "";
   if (!pass) return;
-  var hash = await sha256Hex(pass);
-  if (hash === ADMIN_PASS_HASH) {
-    sessionStorage.setItem("ghAdminAuthed", "1");
-    showAdminPendingView();
-  } else {
-    if (err) { err.textContent = "❌ Incorrect password."; err.style.display = "block"; }
+
+  try {
+    var res = await fetch("https://imnzgzusnghppgbgfdsh.supabase.co/functions/v1/admin-action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass, action: "list" })
+    });
+    var json = await res.json();
+    if (res.ok) {
+      sessionStorage.setItem("ghAdminPass", pass);
+      sessionStorage.setItem("ghAdminAuthed", "1");
+      showAdminPendingView(json.data);
+    } else {
+      if (err) { err.textContent = "❌ " + (json.error || "Incorrect password."); err.style.display = "block"; }
+    }
+  } catch (e) {
+    if (err) { err.textContent = "❌ Network error, try again."; err.style.display = "block"; }
   }
 }
 
-function showAdminPendingView() {
+function showAdminPendingView(data) {
   document.getElementById("adminLoginView").style.display = "none";
   document.getElementById("adminPendingView").style.display = "block";
   document.getElementById("adminBox").classList.add("admin-wide");
-  loadPendingSubmissions();
+  renderPendingList(data || []);
 }
 
-async function loadPendingSubmissions() {
+function renderPendingList(rows) {
   var list = document.getElementById("adminPendingList");
-  if (!list || !supabaseClient) return;
-  list.innerHTML = '<div class="admin-empty"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
-
-  var result = await supabaseClient
-    .from("groups")
-    .select("*")
-    .eq("is_approved", false)
-    .order("created_at", { ascending: false });
-
-  if (result.error) {
-    list.innerHTML = '<div class="admin-empty">⚠️ Failed to load: ' + escapeAttr(result.error.message) + '</div>';
-    return;
-  }
-
-  var rows = result.data || [];
+  if (!list) return;
   if (!rows.length) {
     list.innerHTML = '<div class="admin-empty">✅ No pending submissions.</div>';
     return;
   }
-
   list.innerHTML = rows.map(function(g) {
     return (
       '<div class="admin-pending-card" data-id="' + g.id + '">' +
@@ -2654,30 +2650,24 @@ async function loadPendingSubmissions() {
     );
   }).join("");
 }
-
 async function handleAdminListClick(e) {
   var btn = e.target.closest("[data-action]");
   if (!btn) return;
   var id = btn.getAttribute("data-id");
   var action = btn.getAttribute("data-action");
+  var pass = sessionStorage.getItem("ghAdminPass") || "";
   btn.disabled = true;
   btn.textContent = "…";
 
   try {
-    if (action === "approve") {
-      var res = await supabaseClient
-        .from("groups")
-        .update({ is_approved: true, is_active: true })
-        .eq("id", id);
-      if (res.error) throw res.error;
-    } else if (action === "reject") {
-      var delRes = await supabaseClient
-        .from("groups")
-        .delete()
-        .eq("id", id);
-      if (delRes.error) throw delRes.error;
-    }
-    // Remove the card from view
+    var res = await fetch("https://imnzgzusnghppgbgfdsh.supabase.co/functions/v1/admin-action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass, action: action, id: id })
+    });
+    var json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Action failed");
+
     var card = btn.closest(".admin-pending-card");
     if (card) card.remove();
     var list = document.getElementById("adminPendingList");
