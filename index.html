@@ -1068,6 +1068,48 @@
   .dock-icon { transform: none !important; width: 56px; height: 56px; font-size: 1.9rem; }
   .dock-label { display: none; }
 }
+
+/* ===== ADMIN PANEL ===== */
+.dock-icon.admin-dock-icon { background: linear-gradient(135deg,#334155,#0f172a); }
+.admin-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9999;
+  display: none; align-items: center; justify-content: center; padding: 16px;
+}
+.admin-overlay.open { display: flex; }
+.admin-box {
+  background: #fff; border-radius: 18px; width: 100%; max-width: 480px;
+  max-height: 86vh; overflow-y: auto; padding: 26px; position: relative;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+}
+.admin-box.admin-wide { max-width: 720px; }
+.admin-close-x {
+  position: absolute; top: 16px; right: 16px; width: 34px; height: 34px;
+  border-radius: 50%; border: none; background: #f1f5f9; color: #334155;
+  cursor: pointer; font-size: 1.1rem;
+}
+.admin-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 14px; color: #0f172a; }
+.admin-pass-input {
+  width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px;
+  font-size: 1rem; margin-bottom: 10px;
+}
+.admin-pass-btn {
+  width: 100%; padding: 12px; border: none; border-radius: 10px; color: #fff;
+  font-weight: 700; cursor: pointer; background: linear-gradient(95deg, var(--wa), var(--tg));
+}
+.admin-err { color: #dc2626; font-size: 0.85rem; margin-bottom: 8px; display: none; }
+.admin-pending-card {
+  border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 12px;
+}
+.admin-pending-card h4 { margin: 0 0 4px; font-size: 1rem; color: #0f172a; }
+.admin-pending-card p { margin: 2px 0; font-size: 0.85rem; color: #475569; word-break: break-all; }
+.admin-pending-actions { display: flex; gap: 8px; margin-top: 10px; }
+.admin-btn-approve, .admin-btn-reject {
+  flex: 1; padding: 9px; border: none; border-radius: 8px; font-weight: 700;
+  cursor: pointer; font-size: 0.88rem;
+}
+.admin-btn-approve { background: var(--wa); color: #fff; }
+.admin-btn-reject { background: #fee2e2; color: #b91c1c; }
+.admin-empty { text-align: center; color: #64748b; padding: 24px 0; }
     .games-modal {
       visibility: hidden; opacity: 0; pointer-events: none;
       position: fixed; inset: 0;
@@ -2021,6 +2063,27 @@
 
 <div id="globalToast" class="toast-notify" role="status" aria-live="polite"></div>
 
+<!-- ===== ADMIN PANEL ===== -->
+<div id="adminOverlay" class="admin-overlay">
+  <div class="admin-box" id="adminBox">
+    <button class="admin-close-x" id="adminCloseBtn" aria-label="Close">✕</button>
+
+    <!-- Password screen -->
+    <div id="adminLoginView">
+      <div class="admin-title">🔒 Admin Login</div>
+      <div class="admin-err" id="adminLoginErr"></div>
+      <input type="password" id="adminPassInput" class="admin-pass-input" placeholder="Enter admin password" autocomplete="off">
+      <button class="admin-pass-btn" id="adminLoginBtn">Unlock</button>
+    </div>
+
+    <!-- Pending submissions screen -->
+    <div id="adminPendingView" style="display:none;">
+      <div class="admin-title">🗂️ Pending Submissions</div>
+      <div id="adminPendingList"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════════════════════
      FOLLOW GATE MODAL — user must follow both channels before submitting
 ════════════════════════════════════════════════════════ -->
@@ -2481,9 +2544,169 @@ function renderGamesDock() {
         g.icon +
       '</a>'
     );
-  }).join("");
+  }).join("") +
+    '<a class="dock-icon admin-dock-icon" href="javascript:void(0)" id="adminDockIcon">' +
+      '<span class="dock-label">Admin</span>' +
+      '🛡️' +
+    '</a>';
   row.dataset.rendered = "1";
   initDockMagnify(row, ".dock-icon");
+  var adminIconEl = document.getElementById("adminDockIcon");
+  if (adminIconEl) adminIconEl.addEventListener("click", openAdminPanel);
+}
+
+// ============================================================
+// ADMIN PANEL — password-gated manual approval of submissions
+// ============================================================
+// Paste the SHA-256 hash of your chosen password below.
+// Generate it in the browser console with:
+//   crypto.subtle.digest("SHA-256", new TextEncoder().encode("yourpassword"))
+//     .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")));
+var ADMIN_PASS_HASH = "5ca9e124df985d25a4c131d314a2f457b8466db083a407bdb4ec858221772096";
+
+async function sha256Hex(text) {
+  var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.prototype.map.call(new Uint8Array(buf), function(b) {
+    return b.toString(16).padStart(2, "0");
+  }).join("");
+}
+
+function openAdminPanel() {
+  var overlay = document.getElementById("adminOverlay");
+  var box = document.getElementById("adminBox");
+  if (!overlay) return;
+  overlay.classList.add("open");
+  box.classList.remove("admin-wide");
+  // If already unlocked this session, skip straight to the pending list
+  if (sessionStorage.getItem("ghAdminAuthed") === "1") {
+    showAdminPendingView();
+  } else {
+    document.getElementById("adminLoginView").style.display = "block";
+    document.getElementById("adminPendingView").style.display = "none";
+    var input = document.getElementById("adminPassInput");
+    if (input) { input.value = ""; input.focus(); }
+    var err = document.getElementById("adminLoginErr");
+    if (err) err.style.display = "none";
+  }
+}
+
+function closeAdminPanel() {
+  var overlay = document.getElementById("adminOverlay");
+  if (overlay) overlay.classList.remove("open");
+}
+
+async function attemptAdminLogin() {
+  var input = document.getElementById("adminPassInput");
+  var err = document.getElementById("adminLoginErr");
+  var pass = (input && input.value) || "";
+  if (!pass) return;
+  var hash = await sha256Hex(pass);
+  if (hash === ADMIN_PASS_HASH) {
+    sessionStorage.setItem("ghAdminAuthed", "1");
+    showAdminPendingView();
+  } else {
+    if (err) { err.textContent = "❌ Incorrect password."; err.style.display = "block"; }
+  }
+}
+
+function showAdminPendingView() {
+  document.getElementById("adminLoginView").style.display = "none";
+  document.getElementById("adminPendingView").style.display = "block";
+  document.getElementById("adminBox").classList.add("admin-wide");
+  loadPendingSubmissions();
+}
+
+async function loadPendingSubmissions() {
+  var list = document.getElementById("adminPendingList");
+  if (!list || !supabaseClient) return;
+  list.innerHTML = '<div class="admin-empty"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
+
+  var result = await supabaseClient
+    .from("groups")
+    .select("*")
+    .eq("is_approved", false)
+    .order("created_at", { ascending: false });
+
+  if (result.error) {
+    list.innerHTML = '<div class="admin-empty">⚠️ Failed to load: ' + escapeAttr(result.error.message) + '</div>';
+    return;
+  }
+
+  var rows = result.data || [];
+  if (!rows.length) {
+    list.innerHTML = '<div class="admin-empty">✅ No pending submissions.</div>';
+    return;
+  }
+
+  list.innerHTML = rows.map(function(g) {
+    return (
+      '<div class="admin-pending-card" data-id="' + g.id + '">' +
+        '<h4>' + escapeAttr(g.name || "Untitled") + '</h4>' +
+        '<p><strong>Link:</strong> ' + escapeAttr(g.link || "") + '</p>' +
+        '<p><strong>Platform:</strong> ' + escapeAttr(g.platform_type || "") + '</p>' +
+        '<p><strong>Category:</strong> ' + escapeAttr(g.category || "") + ' | <strong>Country:</strong> ' + escapeAttr(g.country || "") + '</p>' +
+        '<p><strong>Description:</strong> ' + escapeAttr(g.description || "") + '</p>' +
+        '<div class="admin-pending-actions">' +
+          '<button class="admin-btn-approve" data-action="approve" data-id="' + g.id + '">✅ Approve</button>' +
+          '<button class="admin-btn-reject" data-action="reject" data-id="' + g.id + '">🗑️ Reject</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join("");
+}
+
+async function handleAdminListClick(e) {
+  var btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  var id = btn.getAttribute("data-id");
+  var action = btn.getAttribute("data-action");
+  btn.disabled = true;
+  btn.textContent = "…";
+
+  try {
+    if (action === "approve") {
+      var res = await supabaseClient
+        .from("groups")
+        .update({ is_approved: true, is_active: true })
+        .eq("id", id);
+      if (res.error) throw res.error;
+    } else if (action === "reject") {
+      var delRes = await supabaseClient
+        .from("groups")
+        .delete()
+        .eq("id", id);
+      if (delRes.error) throw delRes.error;
+    }
+    // Remove the card from view
+    var card = btn.closest(".admin-pending-card");
+    if (card) card.remove();
+    var list = document.getElementById("adminPendingList");
+    if (list && !list.children.length) {
+      list.innerHTML = '<div class="admin-empty">✅ No pending submissions.</div>';
+    }
+  } catch (err) {
+    alert("Action failed: " + (err.message || err));
+    btn.disabled = false;
+    btn.textContent = action === "approve" ? "✅ Approve" : "🗑️ Reject";
+  }
+}
+
+function initAdminPanel() {
+  var closeBtn = document.getElementById("adminCloseBtn");
+  var loginBtn = document.getElementById("adminLoginBtn");
+  var passInput = document.getElementById("adminPassInput");
+  var overlay = document.getElementById("adminOverlay");
+  var list = document.getElementById("adminPendingList");
+
+  if (closeBtn) closeBtn.addEventListener("click", closeAdminPanel);
+  if (overlay) overlay.addEventListener("click", function(e) {
+    if (e.target === overlay) closeAdminPanel();
+  });
+  if (loginBtn) loginBtn.addEventListener("click", attemptAdminLogin);
+  if (passInput) passInput.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") { e.preventDefault(); attemptAdminLogin(); }
+  });
+  if (list) list.addEventListener("click", handleAdminListClick);
 }
 
 function initDockMagnify(container, selector) {
@@ -3411,6 +3634,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // ---- Submit ----
   on("submitGroupFinalBtn", "click", submitGroup);
+
+  // ---- Admin panel ----
+  initAdminPanel();
 
   // ---- Header scroll shadow ----
   var header = document.getElementById("siteHeader");
